@@ -8,12 +8,12 @@ const WIKI_API_BASE = 'https://en.wikipedia.org/w/api.php';
  * @param {number} section - section index to fetch
  * @returns {Promise<string>} the wikitext of that section
  */
-export async function fetchWikitext(title, section) {
+export async function fetchWikitext(title) {
   const params = new URLSearchParams({
     action: 'parse',
     page: title,
+    // section: String(section),
     prop: 'wikitext',
-    section: String(section),
     format: 'json',
     origin: '*',
   });

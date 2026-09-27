@@ -19,17 +19,34 @@ export function initComments() {
     toggleBtn.textContent = wrapper.hidden ? 'Show comment' : 'Hide comment';
   });
 
-  // NOTE: empty-field validation is intentionally not added yet -
-  // that's a separate, later task.
+  // role="alert" makes screen readers announce the message the moment
+  // it becomes visible - not just on focus, which a plain <p> wouldn't do.
+  const errorMessage = document.createElement('p');
+  errorMessage.className = 'form-error';
+  errorMessage.setAttribute('role', 'alert');
+  errorMessage.hidden = true;
+  form.prepend(errorMessage);
+
   form.addEventListener('submit', (e) => {
     e.preventDefault();
+
+    const name = nameField.value.trim();
+    const comment = commentField.value.trim();
+
+    if (!name || !comment) {
+      errorMessage.textContent = 'Please enter both your name and a comment.';
+      errorMessage.hidden = false;
+      return;
+    }
+
+    errorMessage.hidden = true;
 
     const listItem = document.createElement('li');
     const namePara = document.createElement('p');
     const commentPara = document.createElement('p');
 
-    namePara.textContent = nameField.value;
-    commentPara.textContent = commentField.value;
+    namePara.textContent = name;
+    commentPara.textContent = comment;
 
     listItem.append(namePara, commentPara);
     list.appendChild(listItem);

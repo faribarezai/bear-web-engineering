@@ -6,7 +6,7 @@ import { fetchWikitext, fetchImageUrl } from './api.js';
 import { parseBearRows } from './parser.js';
 
 const PAGE_TITLE = 'List_of_ursids';
-const SECTION = 3;
+ // const SECTION = 3;
 
 /**
  * @typedef {Object} Bear
@@ -20,16 +20,15 @@ const SECTION = 3;
  * @returns {Promise<Bear[]>}
  */
 export async function loadBears() {
-  const wikitext = await fetchWikitext(PAGE_TITLE, SECTION);
+  const wikitext = await fetchWikitext(PAGE_TITLE);
   const rows = parseBearRows(wikitext);
 
-  // Promise.all + map preserves the original array order, even though
-  // the individual image lookups resolve at different times.
-  // (This is what fixed the old race-condition/ordering bug - see chat.)
+  // Promise.all + map preserves the original array order
   return Promise.all(
     rows.map(async (row) => ({
       name: row.name,
       binomial: row.binomial,
+        range: row.range,
       image: await fetchImageUrl(row.fileName),
     }))
   );

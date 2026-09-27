@@ -14,6 +14,13 @@
  * @param {string} wikitext
  * @returns {BearRow[]}
  */
+
+/*
+Only `name` and `binomial` are required to count as a real species row -
+ * `image` and `range` are optional per the app requirements ("if there is
+ * no image available, show a placeholder").
+ */
+
 export function parseBearRows(wikitext) {
   const tables = wikitext.split('{{Species table/end}}');
   const bears = [];
@@ -24,17 +31,20 @@ export function parseBearRows(wikitext) {
     for (const row of rows) {
       const nameMatch = row.match(/\|name=\[\[(.*?)\]\]/);
       const binomialMatch = row.match(/\|binomial=(.*?)\n/);
-      const imageMatch = row.match(/\|image=(.*?)\n/);
+      if(!imageMatch || !binomialMatch) continue; //= row.match(/\|image=(.*?)\n/);
 
-      if (nameMatch && binomialMatch && imageMatch) {
+      const imageMatch = row.match(/\|image=(.*?)\n/);//
+      const rangeMatch= row.match(/\|range=(.*?)\n/); // new var
+
         bears.push({
           name: nameMatch[1],
           binomial: binomialMatch[1].trim(),
           fileName: imageMatch[1].trim().replace('File:', ''),
+          range: rangeMatch ? rangeMatch[1].trim(): 'Unknown',
         });
       }
     }
-  }
+
 
   return bears;
 }

@@ -23,9 +23,15 @@ export function renderBearList(bears, containerSelector = '.more_bears') {
     img.style.height = 'auto';
 
     const nameLine = document.createElement('p');
-    nameLine.innerHTML = `<b>${bear.name}</b> (${bear.binomial})`;
+    const nameBold=document.createElement('b');
+    nameBold.textContent = bear.name;
 
-    card.append(img, nameLine);
+    nameLine.append(nameBold, document.createTextNode(`${bear.binomial})`));
+
+    const rangeLine = document.createElement('p');
+    rangeLine.textContent = `Range: ${bear.range}`;
+
+    card.append(img, nameLine, rangeLine);
     container.appendChild(card);
   }
 }
