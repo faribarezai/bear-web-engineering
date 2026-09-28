@@ -14,10 +14,9 @@ export function initSearch() {
     clearHighlights(article);
 
     const searchKey = searchInput.value.trim();
-    //const searchKey = searchForm.q.value.trim();
     if (!searchKey) return;
 
-    const regex = new RegExp(`(${escapeRegExp(searchKey)})`, 'gi');
+    const regex = new RegExp(`(${escapeRegExp(searchKey)})`, 'gi'); //gi=alle treffer + groß/kleinschreibung
     highlight(article, regex);
   });
 }
@@ -34,17 +33,41 @@ function escapeRegExp(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function highlight(node, regex) {
-  if (node.nodeType === Node.TEXT_NODE) {
-    if (node.nodeValue.match(regex)) {
-      const span = document.createElement('span');
-      span.innerHTML = node.nodeValue.replace(regex, '<mark class="highlight">$1</mark>');
-      node.replaceWith(...span.childNodes);
+function highlight(root, regex) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      return node.parentElement?.closest('script, style, form, mark')
+          ? NodeFilter.FILTER_REJECT
+          : NodeFilter.FILTER_ACCEPT;
+    },
+  });
+
+  const textNodes = [];
+  while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+  for (const node of textNodes) {
+    const text = node.nodeValue;
+    const fragment = document.createDocumentFragment();
+    let lastIndex = 0;
+    let found = false;
+
+    regex.lastIndex = 0;
+
+    for (const match of text.matchAll(regex)) {
+      found = true;
+      fragment.append(document.createTextNode(text.slice(lastIndex, match.index)));
+
+      const mark = document.createElement('mark');
+      mark.className = 'highlight';
+      mark.textContent = match[0];
+      fragment.append(mark);
+
+      lastIndex = match.index + match[0].length;
     }
-  } else if (
-    node.nodeType === Node.ELEMENT_NODE &&
-    !['SCRIPT', 'STYLE', 'FORM'].includes(node.tagName)
-  ) {
-    node.childNodes.forEach((child) => highlight(child, regex));
+
+    if (found) {
+      fragment.append(document.createTextNode(text.slice(lastIndex)));
+      node.replaceWith(fragment);
+    }
   }
 }
