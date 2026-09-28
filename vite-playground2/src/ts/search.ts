@@ -64,7 +64,8 @@ function highlight(root: HTMLElement, regex: RegExp): void {
       if (matchIndex === undefined) continue;
 
       found = true;
-      fragment.append(document.createTextNode(text.slice(lastIndex, matchIndex))
+      fragment.append(
+        document.createTextNode(text.slice(lastIndex, matchIndex))
       );
 
       const mark = document.createElement('mark');

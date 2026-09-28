@@ -34,10 +34,8 @@ export function parseBearRows(wikitext: string): BearRow[] {
     bears.push({
       name: nameMatch[1].trim(),
       binomial: binomialMatch[1].trim(),
-      fileName:
-          fileName === undefined || fileName === '' ? null : fileName,
-      range:
-          range === undefined || range === '' ? 'Unknown' : range,
+      fileName: fileName === undefined || fileName === '' ? null : fileName,
+      range: range === undefined || range === '' ? 'Unknown' : range,
     });
   }
 

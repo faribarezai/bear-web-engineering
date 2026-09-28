@@ -10,11 +10,11 @@ export async function loadBears(): Promise<Bear[]> {
 
   // Load the image URLs asynchronously.
   const imageUrls = await Promise.all(
-      rows.map(async (row) =>
-          row.fileName !== null && row.fileName !== ''
-              ? await fetchImageUrl(row.fileName)
-              : null
-      )
+    rows.map(async (row) =>
+      row.fileName !== null && row.fileName !== ''
+        ? await fetchImageUrl(row.fileName)
+        : null
+    )
   );
 
   return rows.map((row, index) => ({

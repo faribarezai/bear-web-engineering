@@ -23,7 +23,7 @@ async function loadBearsAndRender(): Promise<void> {
       const message = document.createElement('p');
       message.setAttribute('role', 'alert');
       message.textContent =
-          'The bears could not be loaded. Please try again later.';
+        'The bears could not be loaded. Please try again later.';
       container.append(message);
     }
   }

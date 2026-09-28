@@ -10,12 +10,12 @@ export function initComments(): void {
 
   // querySelector kann null zurückgeben. Erst danach verwenden wir die Elemente.
   if (
-      toggleBtn === null ||
-      wrapper === null ||
-      form === null ||
-      nameField === null ||
-      commentField === null ||
-      list === null
+    toggleBtn === null ||
+    wrapper === null ||
+    form === null ||
+    nameField === null ||
+    commentField === null ||
+    list === null
   ) {
     return;
   }

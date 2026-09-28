@@ -42,7 +42,8 @@ export function renderBearList(
       }
     });
 
-    img.src = bear.image === null || bear.image === '' ? placeholderUrl : bear.image;
+    img.src =
+      bear.image === null || bear.image === '' ? placeholderUrl : bear.image;
 
     const nameLine = document.createElement('p');
     const nameBold = document.createElement('b');
