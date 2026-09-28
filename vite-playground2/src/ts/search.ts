@@ -1,13 +1,11 @@
-// search.js
-// Search-and-highlight feature, scoped to the <article> element only -
-// per the requirement "only html contents with tag article should be highlighted".
+// Search and highlight text inside <article> only.
 
-export function initSearch() {
-  const searchForm = document.querySelector('.search');
-  const article = document.querySelector('article');
-  const searchInput = document.querySelector('#search-box');
+export function initSearch(): void {
+  const searchForm = document.querySelector<HTMLFormElement>('.search');
+  const article = document.querySelector<HTMLElement>('article');
+  const searchInput = document.querySelector<HTMLInputElement>('#search-box');
 
-  if (!searchForm || !article) return;
+  if (!searchForm || !article || !searchInput) return;
 
   searchForm.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -16,24 +14,26 @@ export function initSearch() {
     const searchKey = searchInput.value.trim();
     if (!searchKey) return;
 
-    const regex = new RegExp(`(${escapeRegExp(searchKey)})`, 'gi'); //gi=alle treffer + groß/kleinschreibung
+    const regex = new RegExp(`(${escapeRegExp(searchKey)})`, 'gi');
     highlight(article, regex);
   });
 }
 
-function clearHighlights(root) {
+function clearHighlights(root: HTMLElement): void {
   root.querySelectorAll('.highlight').forEach((el) => {
     const parent = el.parentNode;
+    if (!parent) return;
+
     parent.replaceChild(document.createTextNode(el.textContent), el);
     parent.normalize();
   });
 }
 
-function escapeRegExp(str) {
+function escapeRegExp(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function highlight(root, regex) {
+function highlight(root: HTMLElement, regex: RegExp): void {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
       return node.parentElement?.closest('script, style, form, mark')
@@ -42,11 +42,15 @@ function highlight(root, regex) {
     },
   });
 
-  const textNodes = [];
-  while (walker.nextNode()) textNodes.push(walker.currentNode);
+  const textNodes: Text[] = [];
+
+  while (walker.nextNode()) {
+    // SHOW_TEXT sorgt dafür, dass der aktuelle Node ein Textknoten ist.
+    textNodes.push(walker.currentNode as Text);
+  }
 
   for (const node of textNodes) {
-    const text = node.nodeValue;
+    const text = node.nodeValue ?? '';
     const fragment = document.createDocumentFragment();
     let lastIndex = 0;
     let found = false;
@@ -55,7 +59,9 @@ function highlight(root, regex) {
 
     for (const match of text.matchAll(regex)) {
       found = true;
-      fragment.append(document.createTextNode(text.slice(lastIndex, match.index)));
+      fragment.append(
+          document.createTextNode(text.slice(lastIndex, match.index))
+      );
 
       const mark = document.createElement('mark');
       mark.className = 'highlight';

@@ -1,21 +1,21 @@
-// bearView.js – stellt die Bären im DOM dar
+// bearView.ts – stellt die Bären im DOM dar
 
-const PLACEHOLDER_IMAGE = 'public/media/wild-bear.jpg';
+import type { Bear } from './models';
 
-/**
- * Zeigt die Bären in der Reihenfolge des übergebenen Arrays an.
- * @param {import('./bearService.js').Bear[]} bears
- * @param {string} containerSelector
- */
-export function renderBearList(bears, containerSelector = '.more_bears') {
-  const container = document.querySelector(containerSelector);
+const PLACEHOLDER_IMAGE = '/media/wild-bear.jpg';
+
+export function renderBearList(
+    bears: Bear[],
+    containerSelector = '.more_bears'
+): void {
+  const container = document.querySelector<HTMLElement>(containerSelector);
 
   if (!container) {
     throw new Error(`Bear container not found: ${containerSelector}`);
   }
 
-  // Eigener Bereich für die Karten: Die vorhandene Überschrift bleibt erhalten.
-  let list = container.querySelector('.bear-list');
+  // Eigener Bereich für die Karten: Die Überschrift bleibt erhalten.
+  let list = container.querySelector<HTMLElement>('.bear-list');
 
   if (!list) {
     list = document.createElement('div');
@@ -24,7 +24,10 @@ export function renderBearList(bears, containerSelector = '.more_bears') {
   }
 
   const fragment = document.createDocumentFragment();
-  const placeholderUrl = new URL(PLACEHOLDER_IMAGE, document.baseURI).href;
+  const placeholderUrl = new URL(
+      PLACEHOLDER_IMAGE,
+      document.baseURI
+  ).href;
 
   for (const bear of bears) {
     const card = document.createElement('div');
@@ -36,7 +39,7 @@ export function renderBearList(bears, containerSelector = '.more_bears') {
     img.style.height = 'auto';
 
     img.addEventListener('error', () => {
-      // Verhindert eine Endlosschleife, falls der Platzhalter selbst fehlt.
+      // Keine Endlosschleife, falls auch der Platzhalter fehlt.
       if (img.src !== placeholderUrl) {
         img.src = placeholderUrl;
       }
@@ -60,6 +63,5 @@ export function renderBearList(bears, containerSelector = '.more_bears') {
     fragment.append(card);
   }
 
-  // Ersetzt alle bisherigen Karten in einem Schritt.
   list.replaceChildren(fragment);
 }

@@ -1,9 +1,9 @@
-// main.js – startet die Funktionen, sobald das HTML geladen ist
+// main.ts – startet die Funktionen, sobald das HTML geladen ist
 
-import { loadBears } from './bearService.js';
-import { renderBearList } from './bearView.js';
-import { initComments } from './comments.js';
-import { initSearch } from './search.js';
+import { loadBears } from './bearService';
+import { renderBearList } from './bearView';
+import { initComments } from './comments';
+import { initSearch } from './search';
 
 document.addEventListener('DOMContentLoaded', async () => {
   initComments();

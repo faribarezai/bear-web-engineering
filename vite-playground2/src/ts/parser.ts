@@ -15,13 +15,9 @@
  * @returns {BearRow[]}
  */
 
-/*
-Only `name` and `binomial` are required to count as a real species row -
- * `image` and `range` are optional per the app requirements ("if there is
- * no image available, show a placeholder").
- */
+import type {BearRow} from "./models";
 
-export function parseBearRows(wikitext) {
+export function parseBearRows(wikitext:string):BearRow[] {
   const bears = [];
 
   for (const row of wikitext.split('{{Species table/row').slice(1)) {
