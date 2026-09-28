@@ -15,9 +15,9 @@
  * @returns {BearRow[]}
  */
 
-import type {BearRow} from "./models";
+import type { BearRow } from './models';
 
-export function parseBearRows(wikitext:string):BearRow[] {
+export function parseBearRows(wikitext: string): BearRow[] {
   const bears = [];
 
   for (const row of wikitext.split('{{Species table/row').slice(1)) {
@@ -26,13 +26,18 @@ export function parseBearRows(wikitext:string):BearRow[] {
     const imageMatch = row.match(/\|image=([^\n]*)/);
     const rangeMatch = row.match(/\|range=([^\n]*)/);
 
-    if (!nameMatch || !binomialMatch) continue;
+    if (nameMatch === null || binomialMatch === null) continue;
+
+    const fileName = imageMatch?.[1].trim().replace(/^File:/, '');
+    const range = rangeMatch?.[1].trim();
 
     bears.push({
       name: nameMatch[1].trim(),
       binomial: binomialMatch[1].trim(),
-      fileName: imageMatch?.[1].trim().replace(/^File:/, '') || null,
-      range: rangeMatch?.[1].trim() || 'Unknown',
+      fileName:
+          fileName === undefined || fileName === '' ? null : fileName,
+      range:
+          range === undefined || range === '' ? 'Unknown' : range,
     });
   }
 

@@ -1,6 +1,7 @@
 /* || General setup */
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
 }
@@ -18,13 +19,19 @@ body {
 
 /* || typography */
 /* 1. Die Schriftart für alle Überschriften festlegen */
-h1, h2, h3 {
+h1,
+h2,
+h3 {
   font-family: 'Sonsie One', cursive;
   color: #2a2a2a;
 }
 
 /* 2. Standard-Schriftart für Fließtext und Formulare */
-p, input, li, table, label {
+p,
+input,
+li,
+table,
+label {
   font-family: 'Open Sans Condensed', sans-serif;
   color: #2a2a2a;
 }
@@ -49,18 +56,25 @@ h3 {
 }
 
 /* 6. Textgrößen und Zeilenabstand für Fließtext */
-p, li, table {
+p,
+li,
+table {
   font-size: 1.6rem;
   line-height: 1.5;
 }
 
 /* || header layout */
 
-div[class="nav"], article, footer, .secondary {
+div[class='nav'],
+article,
+footer,
+.secondary {
   background-color: green;
 }
 
-article, footer, .secondary {
+article,
+footer,
+.secondary {
   padding: 10px 30px;
 }
 
@@ -68,7 +82,7 @@ article {
   margin-right: 10px;
 }
 
-div[class="nav"] {
+div[class='nav'] {
   height: 50px;
   background-color: ff80ff;
   display: flex;
@@ -76,20 +90,20 @@ div[class="nav"] {
   margin-bottom: 10px;
 }
 
-div[class="nav"] ul {
+div[class='nav'] ul {
   padding: 0;
   list-style-type: none;
   flex: 2;
   display: flex;
 }
 
-div[class="nav"] li {
+div[class='nav'] li {
   display: inline;
   text-align: center;
   flex: 1;
 }
 
-div[class="nav"] a {
+div[class='nav'] a {
   display: inline-block;
   font-size: 2rem;
   text-transform: uppercase;
@@ -97,7 +111,7 @@ div[class="nav"] a {
   color: black;
 }
 
-div[class="nav"] .search {
+div[class='nav'] .search {
   flex: 1;
   display: flex;
   align-items: center;
@@ -110,11 +124,11 @@ div[class="nav"] .search {
   height: 32px;
 }
 
-.search input[type="search"] {
+.search input[type='search'] {
   flex: 3;
 }
 
-.search input[type="submit"] {
+.search input[type='submit'] {
   flex: 1;
   margin-left: 1rem;
   background: #333;
@@ -148,7 +162,8 @@ table {
   border-collapse: collapse;
 }
 
-th, td {
+th,
+td {
   padding: 10px;
 }
 
@@ -156,7 +171,7 @@ td {
   text-align: center;
 }
 
-th[scope="col"] {
+th[scope='col'] {
   border-bottom: 1px solid black;
 }
 
@@ -166,7 +181,8 @@ tbody tr:nth-child(odd) {
 
 /* styling content images and audio */
 
-img, audio {
+img,
+audio {
   display: block;
   margin: 0 auto;
 }
@@ -224,18 +240,21 @@ audio {
   width: 150px;
 }
 
-.comment-form input, .comment-form label, .show-hide {
+.comment-form input,
+.comment-form label,
+.show-hide {
   font-size: 1.6rem;
   line-height: 32px;
 }
 
-.comment-form input[type="submit"], .show-hide {
+.comment-form input[type='submit'],
+.show-hide {
   background: #333;
   border: 0;
   color: white;
 }
 
-.comment-form input[type="submit"] {
+.comment-form input[type='submit'] {
   width: 30%;
   display: block;
   margin: 0 auto;

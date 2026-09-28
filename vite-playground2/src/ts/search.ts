@@ -5,14 +5,14 @@ export function initSearch(): void {
   const article = document.querySelector<HTMLElement>('article');
   const searchInput = document.querySelector<HTMLInputElement>('#search-box');
 
-  if (!searchForm || !article || !searchInput) return;
+  if (searchForm === null || article === null || searchInput === null) return;
 
   searchForm.addEventListener('submit', (e) => {
     e.preventDefault();
     clearHighlights(article);
 
     const searchKey = searchInput.value.trim();
-    if (!searchKey) return;
+    if (searchKey === null) return;
 
     const regex = new RegExp(`(${escapeRegExp(searchKey)})`, 'gi');
     highlight(article, regex);
@@ -22,9 +22,11 @@ export function initSearch(): void {
 function clearHighlights(root: HTMLElement): void {
   root.querySelectorAll('.highlight').forEach((el) => {
     const parent = el.parentNode;
-    if (!parent) return;
+    if (parent === null) return;
 
-    parent.replaceChild(document.createTextNode(el.textContent), el);
+    if (typeof el.textContent === 'string') {
+      parent.replaceChild(document.createTextNode(el.textContent), el);
+    }
     parent.normalize();
   });
 }
@@ -36,15 +38,15 @@ function escapeRegExp(str: string): string {
 function highlight(root: HTMLElement, regex: RegExp): void {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
-      return node.parentElement?.closest('script, style, form, mark')
-          ? NodeFilter.FILTER_REJECT
-          : NodeFilter.FILTER_ACCEPT;
+      return node.parentElement?.closest('script, style, form, mark') != null
+        ? NodeFilter.FILTER_REJECT
+        : NodeFilter.FILTER_ACCEPT;
     },
   });
 
   const textNodes: Text[] = [];
 
-  while (walker.nextNode()) {
+  while (walker.nextNode() !== null) {
     // SHOW_TEXT sorgt dafür, dass der aktuelle Node ein Textknoten ist.
     textNodes.push(walker.currentNode as Text);
   }
@@ -58,9 +60,11 @@ function highlight(root: HTMLElement, regex: RegExp): void {
     regex.lastIndex = 0;
 
     for (const match of text.matchAll(regex)) {
+      const matchIndex = match.index;
+      if (matchIndex === undefined) continue;
+
       found = true;
-      fragment.append(
-          document.createTextNode(text.slice(lastIndex, match.index))
+      fragment.append(document.createTextNode(text.slice(lastIndex, matchIndex))
       );
 
       const mark = document.createElement('mark');
@@ -68,7 +72,7 @@ function highlight(root: HTMLElement, regex: RegExp): void {
       mark.textContent = match[0];
       fragment.append(mark);
 
-      lastIndex = match.index + match[0].length;
+      lastIndex = matchIndex + match[0].length;
     }
 
     if (found) {

@@ -7,10 +7,21 @@
     "dev": "vite",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "build": "npm run typecheck && vite build"
+    "build": "npm run typecheck && vite build",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.{ts,css}\" index.html",
+    "format:check": "prettier --check \"src/**/*.{ts,css}\" index.html"
   },
   "devDependencies": {
-    "typescript": "^7.0.2",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint-config-prettier": "^9.1.2",
+    "eslint-plugin-prettier": "^5.5.6",
+    "prettier": "^3.9.9",
+    "typescript": "5.3.3",
     "vite": "^8.3.0"
+  },
+  "dependencies": {
+    "eslint-config-standard-with-typescript": "^43.0.1"
   }
 }

@@ -9,8 +9,14 @@ export function initComments(): void {
   const list = document.querySelector<HTMLElement>('.comment-container');
 
   // querySelector kann null zurückgeben. Erst danach verwenden wir die Elemente.
-  if (!toggleBtn || !wrapper || !form ||
-      !nameField || !commentField || !list) {
+  if (
+      toggleBtn === null ||
+      wrapper === null ||
+      form === null ||
+      nameField === null ||
+      commentField === null ||
+      list === null
+  ) {
     return;
   }
 
@@ -19,9 +25,7 @@ export function initComments(): void {
   toggleBtn.addEventListener('click', () => {
     wrapper.hidden = !wrapper.hidden;
     toggleBtn.setAttribute('aria-expanded', String(!wrapper.hidden));
-    toggleBtn.textContent = wrapper.hidden
-        ? 'Show comments'
-        : 'Hide comments';
+    toggleBtn.textContent = wrapper.hidden ? 'Show comments' : 'Hide comments';
   });
 
   const errorMessage = document.createElement('p');
@@ -36,9 +40,8 @@ export function initComments(): void {
     const name = nameField.value.trim();
     const comment = commentField.value.trim();
 
-    if (!name || !comment) {
-      errorMessage.textContent =
-          'Please enter both your name and a comment.';
+    if (name === '' || comment === '') {
+      errorMessage.textContent = 'Please enter both your name and a comment.';
       errorMessage.hidden = false;
       return;
     }
