@@ -23,14 +23,17 @@ export async function loadBears() {
   const wikitext = await fetchWikitext(PAGE_TITLE);
   const rows = parseBearRows(wikitext);
 
-  // Promise.all + map preserves the original array order
-  return Promise.all(
-    rows.map(async (row) => ({
-      name: row.name,
-      binomial: row.binomial,
+  //asynchronous control flow
+    const imageUrls = await Promise.all(
+        rows.map((row) =>
+            row.fileName ? fetchImageUrl(row.fileName) : Promise.resolve(null)
+        )
+    );
+
+    return rows.map((row, index) => ({
+        name: row.name,
+        binomial: row.binomial,
         range: row.range,
-        image: row.fileName ? await fetchImageUrl(row.fileName) : null,
-        //image: await fetchImageUrl(row.fileName),
-    }))
-  );
+        image: imageUrls[index],
+    }));
 }
