@@ -29,7 +29,8 @@ export async function loadBears() {
       name: row.name,
       binomial: row.binomial,
         range: row.range,
-      image: await fetchImageUrl(row.fileName),
+        image: row.fileName ? await fetchImageUrl(row.fileName) : null,
+        //image: await fetchImageUrl(row.fileName),
     }))
   );
 }

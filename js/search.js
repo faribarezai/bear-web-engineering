@@ -5,6 +5,7 @@
 export function initSearch() {
   const searchForm = document.querySelector('.search');
   const article = document.querySelector('article');
+  const searchInput = document.querySelector('#search-box');
 
   if (!searchForm || !article) return;
 
@@ -12,7 +13,8 @@ export function initSearch() {
     e.preventDefault();
     clearHighlights(article);
 
-    const searchKey = searchForm.q.value.trim();
+    const searchKey = searchInput.value.trim();
+    //const searchKey = searchForm.q.value.trim();
     if (!searchKey) return;
 
     const regex = new RegExp(`(${escapeRegExp(searchKey)})`, 'gi');

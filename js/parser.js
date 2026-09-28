@@ -22,29 +22,23 @@ Only `name` and `binomial` are required to count as a real species row -
  */
 
 export function parseBearRows(wikitext) {
-  const tables = wikitext.split('{{Species table/end}}');
   const bears = [];
 
-  for (const table of tables) {
-    const rows = table.split('{{Species table/row');
+  for (const row of wikitext.split('{{Species table/row').slice(1)) {
+    const nameMatch = row.match(/\|name=\[\[(?:[^\]|]*\|)?([^\]]+)\]\]/);
+    const binomialMatch = row.match(/\|binomial=([^\n]*)/);
+    const imageMatch = row.match(/\|image=([^\n]*)/);
+    const rangeMatch = row.match(/\|range=([^\n]*)/);
 
-    for (const row of rows) {
-      const nameMatch = row.match(/\|name=\[\[(.*?)\]\]/);
-      const binomialMatch = row.match(/\|binomial=(.*?)\n/);
-      if(!imageMatch || !binomialMatch) continue; //= row.match(/\|image=(.*?)\n/);
+    if (!nameMatch || !binomialMatch) continue;
 
-      const imageMatch = row.match(/\|image=(.*?)\n/);//
-      const rangeMatch= row.match(/\|range=(.*?)\n/); // new var
-
-        bears.push({
-          name: nameMatch[1],
-          binomial: binomialMatch[1].trim(),
-          fileName: imageMatch[1].trim().replace('File:', ''),
-          range: rangeMatch ? rangeMatch[1].trim(): 'Unknown',
-        });
-      }
-    }
-
+    bears.push({
+      name: nameMatch[1].trim(),
+      binomial: binomialMatch[1].trim(),
+      fileName: imageMatch?.[1].trim().replace(/^File:/, '') || null,
+      range: rangeMatch?.[1].trim() || 'Unknown',
+    });
+  }
 
   return bears;
 }

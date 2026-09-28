@@ -8,7 +8,6 @@
     <style>
       body { font-family: Arial, sans-serif; }
       .highlight { background-color: yellow; color: black; }
-      .comment-wrapper { display: block; }
     </style>
   </head>
   <body>
@@ -101,9 +100,10 @@
       </aside>
 
       <section class="comments">
-        <div class="show-hide">Show comment</div>
-
-        <div class="comment-wrapper">
+        <button class="show-hide" type="button" aria-expanded="false">
+          Show comments
+        </button>
+        <div class="comment-wrapper" hidden>
           <h2>Add comment</h2>
           <form class="comment-form">
             <div class="flex-pair">

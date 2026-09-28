@@ -204,6 +204,10 @@ audio {
   padding: 0 3rem 1rem;
 }
 
+.comment-wrapper[hidden] {
+  display: none;
+}
+
 .comment-form label {
   align-self: center;
   flex: 2;

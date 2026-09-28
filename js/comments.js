@@ -16,7 +16,8 @@ export function initComments() {
 
   toggleBtn.addEventListener('click', () => {
     wrapper.hidden = !wrapper.hidden;
-    toggleBtn.textContent = wrapper.hidden ? 'Show comment' : 'Hide comment';
+    toggleBtn.setAttribute('aria-expanded', String(!wrapper.hidden));
+    toggleBtn.textContent = wrapper.hidden ? 'Show comments' : 'Hide comments';
   });
 
   // role="alert" makes screen readers announce the message the moment
