@@ -1,6 +1,6 @@
 // bearView.js – stellt die Bären im DOM dar
 
-const PLACEHOLDER_IMAGE = 'media/wild-bear.jpg';
+const PLACEHOLDER_IMAGE = 'public/media/wild-bear.jpg';
 
 /**
  * Zeigt die Bären in der Reihenfolge des übergebenen Arrays an.
