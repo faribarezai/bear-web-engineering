@@ -1,32 +1,77 @@
-// network communication with Wikipedia API
+// api.js – Kommunikation mit der Wikipedia-API
 
 const WIKI_API_BASE = 'https://en.wikipedia.org/w/api.php';
 
 /**
- * Fetches the raw wikitext of a given section of a Wikipedia page.
- * @param {string} title - page title, e.g. "List_of_ursids"
- * @param {number} section - section index to fetch
- * @returns {Promise<string>} the wikitext of that section
+ * Sendet eine Anfrage an die Wikipedia-API.
+ * Fehlgeschlagene Anfragen und ungültige Antworten werden als Fehler weitergegeben.
+ * @param {URLSearchParams} params
+ * @returns {Promise<object>}
+ */
+async function requestWikipedia(params) {
+  let response;
+
+  try {
+    response = await fetch(`${WIKI_API_BASE}?${params}`);
+  } catch (error) {
+    throw new Error('Wikipedia konnte nicht erreicht werden.', {
+      cause: error,
+    });
+  }
+
+  if (!response.ok) {
+    throw new Error(`Wikipedia antwortete mit HTTP ${response.status}.`);
+  }
+
+  let data;
+
+  try {
+    data = await response.json();
+  } catch (error) {
+    throw new Error('Die Antwort von Wikipedia ist kein gültiges JSON.', {
+      cause: error,
+    });
+  }
+
+  if (data.error) {
+    throw new Error(
+        `Wikipedia-API: ${data.error.info || data.error.code || 'Unbekannter Fehler'}`
+    );
+  }
+
+  return data;
+}
+
+/**
+ * Lädt den Wikitext einer Wikipedia-Seite.
+ * @param {string} title - Seitentitel, z. B. "List_of_ursids"
+ * @returns {Promise<string>}
  */
 export async function fetchWikitext(title) {
   const params = new URLSearchParams({
     action: 'parse',
     page: title,
-    // section: String(section),
     prop: 'wikitext',
     format: 'json',
     origin: '*',
   });
 
-  const res = await fetch(`${WIKI_API_BASE}?${params}`);
-  const data = await res.json();
-  return data.parse.wikitext['*'];
+  const data = await requestWikipedia(params);
+  const wikitext = data.parse?.wikitext?.['*'];
+
+  if (typeof wikitext !== 'string') {
+    throw new Error('Wikipedia lieferte keinen lesbaren Artikeltext.');
+  }
+
+  return wikitext;
 }
 
 /**
- * Resolves the direct image URL for a Wikipedia "File:" page.
- * @param {string} fileName - file name without the "File:" prefix
- * @returns {Promise<string|null>} the image URL, or null if none exists
+ * Ermittelt die Bild-URL zu einer Wikipedia-Datei.
+ * Eine Datei ohne verfügbares Bild ergibt null.
+ * Ein fehlgeschlagener API-Aufruf löst dagegen einen Fehler aus.
+ * @param {string} fileName - Dateiname ohne "File:"
+ * @returns {Promise<string|null>}
  */
 export async function fetchImageUrl(fileName) {
   const params = new URLSearchParams({
@@ -38,8 +83,17 @@ export async function fetchImageUrl(fileName) {
     origin: '*',
   });
 
-  const res = await fetch(`${WIKI_API_BASE}?${params}`);
-  const data = await res.json();
+  const data = await requestWikipedia(params);
+
+  if (!data.query?.pages) {
+    throw new Error(`Wikipedia lieferte keine gültige Bildantwort für ${fileName}.`);
+  }
+
   const page = Object.values(data.query.pages)[0];
-  return page?.imageinfo?.[0]?.url ?? null;
+
+  if (!page) {
+    throw new Error(`Wikipedia lieferte keine Bildseite für ${fileName}.`);
+  }
+
+  return page.imageinfo?.[0]?.url ?? null;
 }

@@ -17,6 +17,13 @@ export function renderBearList(bears, containerSelector = '.more_bears') {
     card.className = 'bear';
 
     const img = document.createElement('img');
+    //catch img url
+    img.addEventListener('error', () => {
+      if (img.src !== new URL(PLACEHOLDER_IMAGE, document.baseURI).href) {
+        img.src = PLACEHOLDER_IMAGE;
+      }
+    });
+
     img.src = bear.image ?? PLACEHOLDER_IMAGE;
     img.alt = `Image of ${bear.name}`;
     img.style.width = '200px';
