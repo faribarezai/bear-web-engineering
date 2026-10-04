@@ -1,4 +1,6 @@
-import { loadBears } from './bearService';
+/**
+
+  import { loadBears } from './bearService';
 import { renderBearList } from './bearView';
 import { initComments } from './comments';
 import { initSearch } from './search';
@@ -28,3 +30,4 @@ async function loadBearsAndRender(): Promise<void> {
     }
   }
 }
+**/
