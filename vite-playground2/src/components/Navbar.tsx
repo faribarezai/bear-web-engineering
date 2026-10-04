@@ -1,12 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface NavbarProps {
     onSearch: (query: string) => void;
+    initialQuery?: string;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onSearch }) => {
-    // Controlled Input für die Suchleiste
-    const [query, setQuery] = useState<string>('');
+export const Navbar: React.FC<NavbarProps> = ({ onSearch, initialQuery = '' }) => {
+    const [query, setQuery] = useState<string>(initialQuery);
+
+    useEffect(() => {
+        setQuery(initialQuery);
+    }, [initialQuery]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();

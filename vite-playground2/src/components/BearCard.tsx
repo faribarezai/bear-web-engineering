@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { Bear } from '../ts/models';
 
 interface BearCardProps {
@@ -8,29 +9,30 @@ interface BearCardProps {
 const FALLBACK_IMAGE = '/media/wild-bear.jpg';
 
 export const BearCard: React.FC<BearCardProps> = ({ bear }) => {
-    // Initialisieren des Bildpfads (falls bear.image fehlt, direkt Fallback nutzen)
     const initialImg = bear.image ? bear.image : FALLBACK_IMAGE;
     const [imgSrc, setImgSrc] = useState<string>(initialImg);
 
-    const handleImageError = () => {
-        // Wikipedia image !laden, auf Fallback ausweichen
-        if (imgSrc !== FALLBACK_IMAGE) {
-            setImgSrc(FALLBACK_IMAGE);
-        }
-    };
+    // Stabilen Identifikator für die URL encodieren (z. B. "Ursus arctos" -> "Ursus%20arctos")
+    const bearUrlPath = `/bear/${encodeURIComponent(bear.binomial)}`;
 
     return (
         <div className="bear">
-            <h3>{bear.name}</h3>
+            <h3>
+                <Link to={bearUrlPath}>{bear.name}</Link>
+            </h3>
             <p>
                 <em>{bear.binomial}</em>
             </p>
-            <img
-                src={imgSrc}
-                alt={bear.name}
-                onError={handleImageError}
-            />
-            <p><strong>Range:</strong> {bear.range}</p>
+            <Link to={bearUrlPath}>
+                <img
+                    src={imgSrc}
+                    alt={bear.name}
+                    onError={() => setImgSrc(FALLBACK_IMAGE)}
+                />
+            </Link>
+            <p>
+                <strong>Range:</strong> {bear.range}
+            </p>
         </div>
     );
 };
