@@ -1,119 +1,117 @@
 import React, { useState } from 'react';
-import type { CommentItem } from '../ts/models';
+
+interface CommentItem {
+  id: string;
+  name: string;
+  comment: string;
+}
 
 export const CommentsSection: React.FC = () => {
-    const [isVisible, setIsVisible] = useState<boolean>(false);
-    const [comments, setComments] = useState<CommentItem[]>([
-        {
-            id: crypto.randomUUID(),
-            name: 'Bob Fossil',
-            comment: 'Oh I am so glad you taught me all about the big brown angry guys...',
-        },
+  const [isVisible, setIsVisible] = useState<boolean>(false);
+  const [comments, setComments] = useState<CommentItem[]>([
+    {
+      id: '1',
+      name: 'Bob Jackson',
+      comment:
+        'It is terrifying to think that wild bears eat human beings. I hope I never run into one in Doncaster.',
+    },
+  ]);
+  const [authorName, setAuthorName] = useState<string>('');
+  const [commentText, setCommentText] = useState<string>('');
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const commentCount = comments.length;
+
+  // 1. Expliziter Return Type : void
+  const handleSubmit = (e: React.FormEvent): void => {
+    e.preventDefault();
+
+    // 2. Explizite Längenprüfung für Strings (length === 0)
+    if (authorName.trim().length === 0 || commentText.trim().length === 0) {
+      setFormError('Please fill out both name and comment fields!');
+      return;
+    }
+
+    setComments((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        name: authorName.trim(),
+        comment: commentText.trim(),
+      },
     ]);
 
-    const [authorName, setAuthorName] = useState<string>('');
-    const [commentText, setCommentText] = useState<string>('');
+    setAuthorName('');
+    setCommentText('');
+    setFormError(null);
+  };
 
-    // Neu: State für die Fehlermeldung bei Validierung
-    const [formError, setFormError] = useState<string | null>(null);
+  return (
+    <section className="comments">
+      <button
+        className="show-hide"
+        onClick={() => {
+          setIsVisible((prev) => !prev);
+        }}
+      >
+        {isVisible
+          ? 'Hide comments'
+          : `Show comments (${commentCount.toString()})`}
+      </button>
 
-    const commentCount = comments.length;
+      {isVisible && (
+        <div className="comment-wrapper">
+          <h2>Add comment</h2>
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
+          <form className="comment-form" onSubmit={handleSubmit}>
+            <div className="flex-pair">
+              <label htmlFor="name">Your name:</label>
+              <input
+                type="text"
+                id="name"
+                value={authorName}
+                onChange={(e) => {
+                  setAuthorName(e.target.value);
+                }}
+                placeholder="Enter your name"
+              />
+            </div>
 
-        const trimmedName = authorName.trim();
-        const trimmedComment = commentText.trim();
+            <div className="flex-pair">
+              <label htmlFor="comment">Your comment:</label>
+              <textarea
+                id="comment"
+                value={commentText}
+                onChange={(e) => {
+                  setCommentText(e.target.value);
+                }}
+                placeholder="Enter your comment"
+              />
+            </div>
 
-        // Validierung mit visueller Rückmeldung
-        if (!trimmedName || !trimmedComment) {
-            setFormError('Please fill out both name and comment fields!');
-            return;
-        }
-
-        const newCommentItem: CommentItem = {
-            id: crypto.randomUUID(),
-            name: trimmedName,
-            comment: trimmedComment,
-        };
-
-        setComments((prevComments) => [...prevComments, newCommentItem]);
-
-        // Formular & Fehler zurücksetzen
-        setAuthorName('');
-        setCommentText('');
-        setFormError(null);
-    };
-
-    return (
-        <section className="comments">
-            <button
-                className="show-hide"
-                type="button"
-                aria-expanded={isVisible}
-                onClick={() => setIsVisible((prev) => !prev)}
-            >
-                {isVisible ? 'Hide comments' : 'Show comments'}
-            </button>
-
-            {isVisible && (
-                <div className="comment-wrapper">
-                    <h2>Add comment</h2>
-                    <form className="comment-form" onSubmit={handleSubmit}>
-                        <div className="flex-pair">
-                            <label htmlFor="name">
-                                Your name:
-                                <input
-                                    type="text"
-                                    id="name"
-                                    value={authorName}
-                                    onChange={(e) => {
-                                        setAuthorName(e.target.value);
-                                        if (formError) setFormError(null); // Fehler beim Tippen zurücksetzen
-                                    }}
-                                    placeholder="Enter your name"
-                                />
-                            </label>
-                        </div>
-                        <div className="flex-pair">
-                            <label htmlFor="comment">
-                                Your comment:
-                                <input
-                                    type="text"
-                                    id="comment"
-                                    value={commentText}
-                                    onChange={(e) => {
-                                        setCommentText(e.target.value);
-                                        if (formError) setFormError(null); // Fehler beim Tippen zurücksetzen
-                                    }}
-                                    placeholder="Enter your comment"
-                                />
-                            </label>
-                        </div>
-
-                        {/* Rote Fehlermeldung anzeigen */}
-                        {formError && (
-                            <p style={{ color: 'red', fontSize: '1.4rem', textAlign: 'center', margin: '5px 0' }}>
-                                {formError}
-                            </p>
-                        )}
-
-                        <div>
-                            <input type="submit" value="Submit comment" />
-                        </div>
-                    </form>
-
-                    <h2>Comments ({commentCount})</h2>
-                    <ul className="comment-container">
-                        {comments.map((item) => (
-                            <li key={item.id}>
-                                <p>{item.name}</p>
-                                <p>{item.comment}</p>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
+            {/* 3. Expliziter null-Check für formError */}
+            {formError !== null && (
+              <p style={{ color: 'red', fontWeight: 'bold' }}>{formError}</p>
             )}
-        </section>
-    );
+
+            <div>
+              <input type="submit" value="Submit comment" />
+            </div>
+          </form>
+
+          <h2>Comments</h2>
+          <ul className="comment-container">
+            {comments.map((item) => (
+              <li key={item.id}>
+                <p>
+                  <strong>{item.name}</strong>
+                </p>
+                <p>{item.comment}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
+  );
 };

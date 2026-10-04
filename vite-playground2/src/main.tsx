@@ -5,12 +5,15 @@ import { App } from './App';
 import './style.css';
 
 const rootElement = document.getElementById('root');
-if (!rootElement) throw new Error('Root element not found');
+// Expliziter Null-Check
+if (rootElement === null) {
+  throw new Error('Root element not found');
+}
 
 ReactDOM.createRoot(rootElement).render(
-    <React.StrictMode>
-        <BrowserRouter>
-            <App />
-        </BrowserRouter>
-    </React.StrictMode>
+  <React.StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </React.StrictMode>
 );

@@ -1,7 +1,7 @@
 import React from 'react';
 
 export const Header: React.FC = () => (
-    <div className="header">
-        <h1>Welcome to our wildlife website</h1>
-    </div>
+  <div className="header">
+    <h1>Welcome to our wildlife website</h1>
+  </div>
 );

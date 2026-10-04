@@ -15,4 +15,10 @@ module.exports = {
         'plugin:prettier/recommended',
         'prettier',
     ],
+    rules: {
+        // Deaktiviert veraltete/entfernte Rules aus älteren typescript-eslint Versionen
+        '@typescript-eslint/lines-between-class-members': 'off',
+        '@typescript-eslint/no-throw-literal': 'off',
+        '@typescript-eslint/ban-types': 'off',
+    },
 };

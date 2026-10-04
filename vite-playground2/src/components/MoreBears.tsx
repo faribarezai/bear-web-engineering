@@ -4,77 +4,77 @@ import { loadBears } from '../ts/bearService';
 import { BearCard } from './BearCard';
 
 export const MoreBears: React.FC = () => {
-    // Explizite Zustände für das Remote Data Fetching
-    const [bears, setBears] = useState<Bear[]>([]);
-    const [isLoading, setIsLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
+  // Explizite Zustände für das Remote Data Fetching
+  const [bears, setBears] = useState<Bear[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        // AbortController zur Vermeidung von Race Conditions und Stale Data
-        const controller = new AbortController();
+  useEffect(() => {
+    // AbortController zur Vermeidung von Race Conditions
+    const controller = new AbortController();
 
-        const fetchBears = async () => {
-            setIsLoading(true);
-            setError(null);
+    // 1. Expliziter Return Type : Promise<void>
+    const fetchBears = async (): Promise<void> => {
+      setIsLoading(true);
+      setError(null);
 
-            try {
-                // Aufruf deiner echten Service-Funktion
-                const fetchedBears = await loadBears();
+      try {
+        const fetchedBears = await loadBears();
 
-                // Nur den State aktualisieren, wenn der Request nicht in der Zwischenzeit abgebrochen wurde
-                if (!controller.signal.aborted) {
-                    setBears(fetchedBears);
-                }
-            } catch (err: unknown) {
-                if (!controller.signal.aborted) {
-                    setError(
-                        err instanceof Error
-                            ? err.message
-                            : 'Failed to load bears from Wikipedia.'
-                    );
-                }
-            } finally {
-                if (!controller.signal.aborted) {
-                    setIsLoading(false);
-                }
-            }
-        };
+        if (!controller.signal.aborted) {
+          setBears(fetchedBears);
+        }
+      } catch (err: unknown) {
+        if (!controller.signal.aborted) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : 'Failed to load bears from Wikipedia.'
+          );
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoading(false);
+        }
+      }
+    };
 
-        fetchBears();
+    // 2. Void-Operator für unhandled Promise im useEffect
+    void fetchBears();
 
-        // Cleanup-Funktion: Bricht laufende Vorgänge beim Unmount ab
-        return () => {
-            controller.abort();
-        };
-    }, []);
+    // Cleanup-Funktion
+    return () => {
+      controller.abort();
+    };
+  }, []);
 
-    return (
-        <section className="more_bears">
-            <h3>More Bears</h3>
+  return (
+    <section className="more_bears">
+      <h3>More Bears</h3>
 
-            {/* 1. Loading State */}
-            {isLoading && <p>Loading bears from Wikipedia...</p>}
+      {/* 1. Loading State */}
+      {isLoading && <p>Loading bears from Wikipedia...</p>}
 
-            {/* 2. Error State */}
-            {error && (
-                <p role="alert" style={{ color: 'red', fontSize: '1.6rem' }}>
-                    {error}
-                </p>
-            )}
+      {/* 2. Error State mit explizitem null-Check */}
+      {error !== null && (
+        <p role="alert" style={{ color: 'red', fontSize: '1.6rem' }}>
+          {error}
+        </p>
+      )}
 
-            {/* 3. Empty State */}
-            {!isLoading && !error && bears.length === 0 && (
-                <p>No bears found.</p>
-            )}
+      {/* 3. Empty State mit explizitem null-Check */}
+      {!isLoading && error === null && bears.length === 0 && (
+        <p>No bears found.</p>
+      )}
 
-            {/* 4. Success State */}
-            {!isLoading && !error && bears.length > 0 && (
-                <div className="bear-list">
-                    {bears.map((bear) => (
-                        <BearCard key={bear.binomial} bear={bear} />
-                    ))}
-                </div>
-            )}
-        </section>
-    );
+      {/* 4. Success State mit explizitem null-Check */}
+      {!isLoading && error === null && bears.length > 0 && (
+        <div className="bear-list">
+          {bears.map((bear) => (
+            <BearCard key={bear.binomial} bear={bear} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
 };
