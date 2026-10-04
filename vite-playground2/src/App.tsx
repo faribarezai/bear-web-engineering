@@ -145,7 +145,7 @@ export function App() {
 
                     <CommentsSection />
 
-                    <MoreBears bears={bears} isLoading={isLoading} error={error} />
+                    <MoreBears />
                 </article>
 
                 <div className="secondary">

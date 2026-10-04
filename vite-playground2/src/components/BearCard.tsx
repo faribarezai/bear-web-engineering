@@ -1,34 +1,36 @@
 import React, { useState } from 'react';
 import type { Bear } from '../ts/models';
 
-const PLACEHOLDER_IMAGE = '/media/wild-bear.jpg';
-
 interface BearCardProps {
     bear: Bear;
 }
 
-export const BearCard: React.FC<BearCardProps> = ({ bear }) => {
-    const initialSrc = bear.image && bear.image !== '' ? bear.image : PLACEHOLDER_IMAGE;
-    const [imgSrc, setImgSrc] = useState<string>(initialSrc);
+const FALLBACK_IMAGE = '/media/wild-bear.jpg';
 
-    const handleError = () => {
-        if (imgSrc !== PLACEHOLDER_IMAGE) {
-            setImgSrc(PLACEHOLDER_IMAGE);
+export const BearCard: React.FC<BearCardProps> = ({ bear }) => {
+    // Initialisieren des Bildpfads (falls bear.image fehlt, direkt Fallback nutzen)
+    const initialImg = bear.image ? bear.image : FALLBACK_IMAGE;
+    const [imgSrc, setImgSrc] = useState<string>(initialImg);
+
+    const handleImageError = () => {
+        // Wikipedia image !laden, auf Fallback ausweichen
+        if (imgSrc !== FALLBACK_IMAGE) {
+            setImgSrc(FALLBACK_IMAGE);
         }
     };
 
     return (
         <div className="bear">
+            <h3>{bear.name}</h3>
+            <p>
+                <em>{bear.binomial}</em>
+            </p>
             <img
                 src={imgSrc}
-                alt={`Image of ${bear.name}`}
-                onError={handleError}
-                style={{ width: '200px', height: 'auto' }}
+                alt={bear.name}
+                onError={handleImageError}
             />
-            <p>
-                <b>{bear.name}</b> ({bear.binomial})
-            </p>
-            <p>Range: {bear.range}</p>
+            <p><strong>Range:</strong> {bear.range}</p>
         </div>
     );
 };
