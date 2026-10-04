@@ -5,11 +5,12 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ onSearch }) => {
-    const [searchTerm, setSearchTerm] = useState('');
+    // Controlled Input für die Suchleiste
+    const [query, setQuery] = useState<string>('');
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSearch(searchTerm.trim());
+        onSearch(query.trim());
     };
 
     return (
@@ -26,10 +27,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearch }) => {
                 <input
                     type="search"
                     id="search-box"
-                    name="q"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search query"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
                 />
                 <input type="submit" value="Go!" />
             </form>

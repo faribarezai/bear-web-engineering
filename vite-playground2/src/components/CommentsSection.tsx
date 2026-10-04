@@ -5,37 +5,44 @@ export const CommentsSection: React.FC = () => {
     const [isVisible, setIsVisible] = useState<boolean>(false);
     const [comments, setComments] = useState<CommentItem[]>([
         {
-            id: '1',
+            id: crypto.randomUUID(),
             name: 'Bob Fossil',
             comment: 'Oh I am so glad you taught me all about the big brown angry guys...',
         },
     ]);
 
-    const [name, setName] = useState<string>('');
+    const [authorName, setAuthorName] = useState<string>('');
     const [commentText, setCommentText] = useState<string>('');
-    const [error, setError] = useState<string | null>(null);
+
+    // Neu: State für die Fehlermeldung bei Validierung
+    const [formError, setFormError] = useState<string | null>(null);
+
+    const commentCount = comments.length;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        const trimmedName = name.trim();
+        const trimmedName = authorName.trim();
         const trimmedComment = commentText.trim();
 
-        if (trimmedName === '' || trimmedComment === '') {
-            setError('Please enter both your name and a comment.');
+        // Validierung mit visueller Rückmeldung
+        if (!trimmedName || !trimmedComment) {
+            setFormError('Please fill out both name and comment fields!');
             return;
         }
 
-        setError(null);
-        const newComment: CommentItem = {
+        const newCommentItem: CommentItem = {
             id: crypto.randomUUID(),
             name: trimmedName,
             comment: trimmedComment,
         };
 
-        setComments((prev) => [...prev, newComment]);
-        setName('');
+        setComments((prevComments) => [...prevComments, newCommentItem]);
+
+        // Formular & Fehler zurücksetzen
+        setAuthorName('');
         setCommentText('');
+        setFormError(null);
     };
 
     return (
@@ -53,46 +60,50 @@ export const CommentsSection: React.FC = () => {
                 <div className="comment-wrapper">
                     <h2>Add comment</h2>
                     <form className="comment-form" onSubmit={handleSubmit}>
-                        {error && (
-                            <p className="form-error" role="alert">
-                                {error}
-                            </p>
-                        )}
-
                         <div className="flex-pair">
                             <label htmlFor="name">
                                 Your name:
                                 <input
                                     type="text"
-                                    name="name"
                                     id="name"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
+                                    value={authorName}
+                                    onChange={(e) => {
+                                        setAuthorName(e.target.value);
+                                        if (formError) setFormError(null); // Fehler beim Tippen zurücksetzen
+                                    }}
                                     placeholder="Enter your name"
                                 />
                             </label>
                         </div>
-
                         <div className="flex-pair">
                             <label htmlFor="comment">
                                 Your comment:
                                 <input
                                     type="text"
-                                    name="comment"
                                     id="comment"
                                     value={commentText}
-                                    onChange={(e) => setCommentText(e.target.value)}
+                                    onChange={(e) => {
+                                        setCommentText(e.target.value);
+                                        if (formError) setFormError(null); // Fehler beim Tippen zurücksetzen
+                                    }}
                                     placeholder="Enter your comment"
                                 />
                             </label>
                         </div>
+
+                        {/* Rote Fehlermeldung anzeigen */}
+                        {formError && (
+                            <p style={{ color: 'red', fontSize: '1.4rem', textAlign: 'center', margin: '5px 0' }}>
+                                {formError}
+                            </p>
+                        )}
 
                         <div>
                             <input type="submit" value="Submit comment" />
                         </div>
                     </form>
 
-                    <h2>Comments</h2>
+                    <h2>Comments ({commentCount})</h2>
                     <ul className="comment-container">
                         {comments.map((item) => (
                             <li key={item.id}>
