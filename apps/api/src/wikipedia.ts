@@ -1,5 +1,6 @@
 import { parseBearRows } from './parser.js';
 import { BearsResponseSchema, slugifyBinomial, type Bear } from './schema.js';
+import { UpstreamError } from './errors.js';
 
 const WIKI_API_BASE =
   process.env.WIKI_API_BASE ?? 'https://en.wikipedia.org/w/api.php';
@@ -7,16 +8,6 @@ const USER_AGENT =
   'WebEngWildlifeApp/1.0 (University Web Engineering Project; contact@example.org)';
 const UPSTREAM_TIMEOUT_MS = Number(process.env.UPSTREAM_TIMEOUT_MS ?? 8000);
 const PAGE_TITLE = 'List_of_ursids';
-
-export class UpstreamError extends Error {
-  public readonly statusCode: 502 | 504;
-
-  constructor(message: string, statusCode: 502 | 504 = 502) {
-    super(message);
-    this.name = 'UpstreamError';
-    this.statusCode = statusCode;
-  }
-}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);

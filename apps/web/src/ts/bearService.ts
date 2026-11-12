@@ -1,5 +1,20 @@
 import type { Bear, CommentItem } from './models.ts';
 
+interface ProblemValidationIssue {
+  field: string;
+  message: string;
+}
+
+interface ProblemDetailsResponse {
+  type?: string;
+  title?: string;
+  status?: number;
+  detail?: string;
+  instance?: string;
+  requestId?: string;
+  errors?: ProblemValidationIssue[];
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -8,14 +23,45 @@ async function readApiError(
   response: Response,
   fallback: string
 ): Promise<string> {
+  const headerRequestId = response.headers.get('x-request-id');
+
   try {
     const body = (await response.json()) as unknown;
-    if (isRecord(body) && typeof body.error === 'string') {
-      return body.error;
+    if (isRecord(body)) {
+      const problem = body as ProblemDetailsResponse;
+      const baseDetail =
+        typeof problem.detail === 'string' && problem.detail.trim().length > 0
+          ? problem.detail
+          : fallback;
+
+      const fieldMessages = Array.isArray(problem.errors)
+        ? problem.errors
+            .filter(
+              (item): item is ProblemValidationIssue =>
+                isRecord(item) && typeof item.message === 'string'
+            )
+            .map((item) => item.message)
+        : [];
+
+      const reqId =
+        typeof problem.requestId === 'string'
+          ? problem.requestId
+          : headerRequestId;
+
+      const messageParts = [baseDetail];
+      if (fieldMessages.length > 0) {
+        messageParts.push(fieldMessages.join(' '));
+      }
+      if (reqId !== null && reqId.trim().length > 0) {
+        messageParts.push(`(Ref: ${reqId})`);
+      }
+
+      return messageParts.join(' ');
     }
   } catch {
-    // Ignorieren, falls kein JSON-Fehlerkörper vorhanden ist
+    // Fallback, falls kein JSON-Body vorliegt
   }
+
   return `${fallback} (HTTP ${response.status})`;
 }
 
