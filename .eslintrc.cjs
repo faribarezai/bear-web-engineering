@@ -2,11 +2,12 @@ module.exports = {
     root: true,
     env: {
         browser: true,
+        node: true,
         es2022: true,
     },
     parser: '@typescript-eslint/parser',
     parserOptions: {
-        project: './tsconfig.json',
+        project: ['./apps/*/tsconfig.json'],
         tsconfigRootDir: __dirname,
     },
     extends: [
@@ -16,9 +17,10 @@ module.exports = {
         'prettier',
     ],
     rules: {
-        // Deaktiviert veraltete/entfernte Rules aus älteren typescript-eslint Versionen
         '@typescript-eslint/lines-between-class-members': 'off',
         '@typescript-eslint/no-throw-literal': 'off',
         '@typescript-eslint/ban-types': 'off',
+        // Fastify route handler sind oft async ohne internes await
+        '@typescript-eslint/require-await': 'off',
     },
 };

@@ -7,11 +7,11 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace web",
+    "dev": "npm run dev --workspaces --if-present",
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "lint": "eslint \"apps/*/src\" --ext .js,.ts,.tsx",
-    "lint:fix": "eslint \"apps/*/src\" --ext .js,.ts,.tsx --fix",
+    "lint": "eslint \"apps/*/src/**/*.{js,ts,tsx}\"",
+    "lint:fix": "eslint \"apps/*/src/**/*.{js,ts,tsx}\" --fix",
     "format": "prettier --write \"apps/*/src/**/*.{js,ts,tsx}\"",
     "format:check": "prettier --check \"apps/*/src/**/*.{js,ts,tsx}\"",
     "prepare": "husky"

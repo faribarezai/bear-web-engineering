@@ -90,9 +90,7 @@ export const CommentsSection: React.FC = () => {
             </div>
 
             {/* 3. Expliziter null-Check für formError */}
-            {formError !== null && (
-              <p className="form-error">{formError} </p>
-            )}
+            {formError !== null && <p className="form-error">{formError} </p>}
 
             <div>
               <input type="submit" value="Submit comment" />

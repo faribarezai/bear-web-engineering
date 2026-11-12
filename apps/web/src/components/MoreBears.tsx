@@ -56,11 +56,7 @@ export const MoreBears: React.FC = () => {
       {isLoading && <p>Loading bears from Wikipedia...</p>}
 
       {/* 2. Error State mit explizitem null-Check */}
-      {error !== null && (
-        <p className="form-error">
-        {error}
-        </p>
-      )}
+      {error !== null && <p className="form-error">{error}</p>}
 
       {/* 3. Empty State mit explizitem null-Check */}
       {!isLoading && error === null && bears.length === 0 && (

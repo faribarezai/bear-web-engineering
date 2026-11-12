@@ -75,7 +75,7 @@ export const BearDetail: React.FC = () => {
     return (
       <article>
         <h2>Error</h2>
-          <p role="alert" className="form-error">
+        <p role="alert" className="form-error">
           {error ?? 'Bear not found.'}
         </p>
         <div style={{ marginTop: '20px' }}>
