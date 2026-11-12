@@ -15,6 +15,12 @@ interface ProblemDetailsResponse {
   errors?: ProblemValidationIssue[];
 }
 
+const API_BASE =
+  typeof import.meta.env.VITE_API_BASE_URL === 'string' &&
+  import.meta.env.VITE_API_BASE_URL.trim().length > 0
+    ? import.meta.env.VITE_API_BASE_URL.trim().replace(/\/$/, '')
+    : '/api';
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -66,7 +72,7 @@ async function readApiError(
 }
 
 export async function loadBears(signal?: AbortSignal): Promise<Bear[]> {
-  const response = await fetch('/api/bears', { signal });
+  const response = await fetch(`${API_BASE}/bears`, { signal });
 
   if (!response.ok) {
     const message = await readApiError(response, 'Failed to load bears');
@@ -80,7 +86,7 @@ export async function loadBearById(
   id: string,
   signal?: AbortSignal
 ): Promise<Bear> {
-  const response = await fetch(`/api/bears/${encodeURIComponent(id)}`, {
+  const response = await fetch(`${API_BASE}/bears/${encodeURIComponent(id)}`, {
     signal,
   });
 
@@ -97,7 +103,7 @@ export async function loadComments(
   signal?: AbortSignal
 ): Promise<CommentItem[]> {
   const response = await fetch(
-    `/api/bears/${encodeURIComponent(bearId)}/comments`,
+    `${API_BASE}/bears/${encodeURIComponent(bearId)}/comments`,
     { signal }
   );
 
@@ -115,7 +121,7 @@ export async function postComment(
   text: string
 ): Promise<CommentItem> {
   const response = await fetch(
-    `/api/bears/${encodeURIComponent(bearId)}/comments`,
+    `${API_BASE}/bears/${encodeURIComponent(bearId)}/comments`,
     {
       method: 'POST',
       headers: {
@@ -135,7 +141,7 @@ export async function postComment(
 
 export async function removeComment(commentId: string): Promise<void> {
   const response = await fetch(
-    `/api/comments/${encodeURIComponent(commentId)}`,
+    `${API_BASE}/comments/${encodeURIComponent(commentId)}`,
     {
       method: 'DELETE',
     }

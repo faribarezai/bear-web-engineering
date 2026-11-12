@@ -19,10 +19,6 @@ export interface BearRow {
   range: string;
 }
 
-/**
- * Erzeugt einen stabilen, URL-sicheren Slug aus dem binomialen Namen.
- * Beispiel: "Ursus arctos" -> "ursus-arctos"
- */
 export function slugifyBinomial(binomial: string): string {
   return binomial
     .trim()
@@ -31,7 +27,6 @@ export function slugifyBinomial(binomial: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
-//
 export const CreateCommentSchema = z.object({
   author: z
     .string()
@@ -56,3 +51,34 @@ export const CommentSchema = z.object({
 });
 
 export type Comment = z.infer<typeof CommentSchema>;
+
+export const CommentsResponseSchema = z.array(CommentSchema);
+
+export const BearIdParamsSchema = z.object({
+  id: z.string().min(1),
+});
+
+export const CommentIdParamsSchema = z.object({
+  commentId: z.string().min(1),
+});
+
+export const HealthResponseSchema = z.object({
+  status: z.string(),
+  version: z.string(),
+  uptime: z.number(),
+});
+
+export const ValidationIssueSchema = z.object({
+  field: z.string(),
+  message: z.string(),
+});
+
+export const ProblemDetailsSchema = z.object({
+  type: z.string(),
+  title: z.string(),
+  status: z.number().int(),
+  detail: z.string(),
+  instance: z.string(),
+  requestId: z.string(),
+  errors: z.array(ValidationIssueSchema).optional(),
+});
