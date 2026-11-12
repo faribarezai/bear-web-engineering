@@ -121,11 +121,11 @@ div[class='nav'] a {
   font-size: 2rem;
   text-transform: uppercase;
   text-decoration: none;
-  color: white;
+  color: #2b1d16;
 }
 
 div[class='nav'] label {
-  color: white;
+  color: #2b1d16;
 }
 
 div[class='nav']{
