@@ -6,8 +6,11 @@ export interface Bear {
   image: string | null;
   range: string;
 }
+// erweitern um author, createdAt und bearID
 export interface CommentItem {
   id: string;
-  name: string;
-  comment: string;
+  bearId: string;
+  author: string;
+  text: string;
+  createdAt: string;
 }

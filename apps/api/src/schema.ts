@@ -30,3 +30,29 @@ export function slugifyBinomial(binomial: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 }
+
+//
+export const CreateCommentSchema = z.object({
+  author: z
+    .string()
+    .trim()
+    .min(1, 'Author must not be empty.')
+    .max(80, 'Author must be at most 80 characters.'),
+  text: z
+    .string()
+    .trim()
+    .min(1, 'Comment text must not be empty.')
+    .max(1000, 'Comment text must be at most 1000 characters.'),
+});
+
+export type CreateCommentInput = z.infer<typeof CreateCommentSchema>;
+
+export const CommentSchema = z.object({
+  id: z.string().uuid(),
+  bearId: z.string().min(1),
+  author: z.string().min(1),
+  text: z.string().min(1),
+  createdAt: z.string().datetime(),
+});
+
+export type Comment = z.infer<typeof CommentSchema>;

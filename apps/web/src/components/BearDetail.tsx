@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import type { Bear } from '../ts/models.ts';
 import { loadBears } from '../ts/bearService.ts';
+import { CommentsSection } from './CommentsSection.tsx';
 
 const FALLBACK_IMAGE = '/media/wild-bear.jpg';
 
@@ -106,6 +107,8 @@ export const BearDetail: React.FC = () => {
       <div style={{ marginTop: '20px' }}>
         <Link to="/">← Back to overview</Link>
       </div>
+
+      <CommentsSection bearId={bear.id} />
     </article>
   );
 };

@@ -2,7 +2,6 @@ import React from 'react';
 import { Routes, Route, useSearchParams, useNavigate } from 'react-router-dom';
 import { Header } from './components/Header.tsx';
 import { Navbar } from './components/Navbar.tsx';
-import { CommentsSection } from './components/CommentsSection.tsx';
 import { MoreBears } from './components/MoreBears.tsx';
 import { BearDetail } from './components/BearDetail.tsx';
 import { HighlightedText } from './components/HighlightedText.tsx';
@@ -109,7 +108,6 @@ export const App: React.FC = () => {
                   <h3>About the author</h3>
                   <p>Evan Wild is an unemployed plumber from Doncaster...</p>
                 </aside>
-                <CommentsSection />
                 <MoreBears />
               </article>
             }

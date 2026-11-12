@@ -212,4 +212,164 @@ You might have noticed that the base project has a number of accessibility issue
 > _Note your findings here..._
 >
 
+
+
+# Playground 4: backend — Tasks
+
+
+## Qualitäts-Checks ausführen:
+vor dem commit, lokal ausführen:
+
+npm run format
+npm run lint
+npm run typecheck
+npm run build
+
+## Task 1: Set up the API workspace
+
+- Set up npm workspaces with:
+  - `apps/web`: React application
+  - `apps/api`: Fastify API using TypeScript strict mode and ESM
+- Implement `GET /health`, returning JSON with:
+  - `status`
+  - `version`
+  - `uptime`
+- Create a `Dockerfile` for both apps and a `compose.yaml`
+- Enable `npm run dev` with hot reload
+- Configure Vite to proxy `/api` requests to the API
+- Extend ESLint, Prettier, Husky and CI from Playground 2 to both workspaces
+
+**Done when:**
+
+- On a clean clone, `docker compose up --build` serves the web app.
+- `curl -i localhost:3000/health` returns `200` with JSON.
+- CI is green for both workspaces.
+
+**Theory:**
+
+- Node’s event loop: why does one slow synchronous operation delay every request?
+- What is a health endpoint for, and who calls it?
+
+
+
+## Task 2: Move the Wikipedia call behind a BFF
+
+- Implement:
+  - `GET /api/bears`
+  - `GET /api/bears/:id`
+- Fetch and parse Wikipedia data server-side.
+- Use a descriptive `User-Agent` header according to the Wikimedia policy.
+- Add a timeout to the upstream Wikipedia call.
+- Normalise and type the `Bear` object:
+  - `id` must be a stable slug based on the binomial name.
+  - Validate the data with Zod.
+- Handle upstream failures:
+  - Return `502` or `504`.
+  - Never return an empty list.
+  - The browser must no longer communicate directly with Wikipedia.
+
+**Done when:**
+
+- The web app shows the same bears as before, exclusively via `/api/bears`.
+- With the upstream blocked, for example through a wrong hostname, the UI shows its error state.
+
+**Theory:**
+
+- What is a Backend for Frontend (BFF), and what moves from the browser to the server?
+- Why is an empty `200` response on upstream failure worse than a `502`?
+
+## Task 3: Design the comments API
+
+- Implement:
+  - `GET /api/bears/:id/comments`
+  - `POST /api/bears/:id/comments`
+  - `DELETE /api/comments/:commentId`
+- `POST` returns:
+  - `201 Created`
+  - A `Location` header
+- `DELETE` returns:
+  - `204 No Content`
+- Validate requests with Zod:
+  - `author` and `text` must be non-empty.
+  - Apply sensible length limits.
+  - Return `400` for invalid input.
+  - Return `404` for unknown bears or comments.
+- Store comments in memory using a `Map`.
+- Connect the comment section of the React app.
+
+**Done when:**
+
+- Comments created in the UI survive a page reload.
+- Comments do not survive an API restart.
+- You can explain why.
+- `curl` demonstrates:
+  - `201`
+  - `204`
+  - `400`
+  - `404`
+
+**Theory:**
+
+- Safe, idempotent and cacheable HTTP methods.
+- Why is `POST` used for creating resources?
+- Why must `DELETE` be idempotent?
+- What happens when a client retries a `POST`?
+
+## Task 4: One error format for everything
+
+- Create typed error classes.
+- Implement one Fastify error handler that renders responses as RFC 9457 `application/problem+json`.
+- Support the following responses:
+  - `400` with an `errors` array
+  - `404`
+  - `502` or `504`
+  - `500` without stack trace or internal details
+- Add a request ID:
+  - Generate one or take over an incoming `x-request-id`.
+  - Return it in the response.
+  - Include it in the log line.
+  - Include it in the error instance.
+
+**Done when:**
+
+- `curl -i` shows `application/problem+json` and a request ID for:
+  - `400`
+  - `404`
+  - `502`
+  - A provoked `500`
+- The request ID can be found in the API log.
+
+**Theory:**
+
+- Why exactly one error contract?
+- Which information must never leave the server?
+- How do request IDs connect a complaint to a log line?
+
+## Task 5: CORS and the API contract
+
+- Serve the built web app from another origin, for example:
+  - `vite preview` on port `4173`
+  - An absolute API URL
+- Observe the request failing because of CORS.
+- Configure `@fastify/cors` with an allow-list from the environment.
+- Allow only the required methods and headers.
+- Observe the preflight request for:
+  - A `DELETE` request
+  - A JSON `POST` request
+- Generate OpenAPI 3.1 documentation from your Zod schemas using `@fastify/swagger`.
+- Serve the documentation at `/api/docs`.
+
+**Done when:**
+
+- The preflight `OPTIONS` request and the successful cross-origin request are visible in DevTools.
+- `/api/docs` lists every route, including the Problem Details schema.
+
+**Theory:**
+
+- Who enforces CORS?
+- What is the difference between simple and preflighted requests?
+- Why should `*` not be used together with credentials?
+- Why does a BFF make most CORS problems disappear?
+
+
 <p>© 2026 Leon Freudenthaler (Hochschule Campus Wien). All rights reversed.</p>
