@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import type { Bear } from '../ts/models';
-import { loadBears } from '../ts/bearService';
+import type { Bear } from '../ts/models.ts';
+import { loadBears } from '../ts/bearService.ts';
 
 const FALLBACK_IMAGE = '/media/wild-bear.jpg';
 
@@ -75,7 +75,7 @@ export const BearDetail: React.FC = () => {
     return (
       <article>
         <h2>Error</h2>
-        <p style={{ color: 'red', fontSize: '1.8rem' }}>
+          <p role="alert" className="form-error">
           {error ?? 'Bear not found.'}
         </p>
         <div style={{ marginTop: '20px' }}>

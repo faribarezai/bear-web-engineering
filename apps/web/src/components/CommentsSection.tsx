@@ -91,7 +91,7 @@ export const CommentsSection: React.FC = () => {
 
             {/* 3. Expliziter null-Check für formError */}
             {formError !== null && (
-              <p style={{ color: 'red', fontWeight: 'bold' }}>{formError}</p>
+              <p className="form-error">{formError} </p>
             )}
 
             <div>

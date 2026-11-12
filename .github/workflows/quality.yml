@@ -10,7 +10,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: vite-playground2
+        working-directory: WebEng
 
     steps:
       - uses: actions/checkout@v6
@@ -19,7 +19,7 @@ jobs:
         with:
           node-version: '20'
           cache: npm
-          cache-dependency-path: vite-playground2/package-lock.json
+          cache-dependency-path: WebEng/package-lock.json
 
       - name: Install dependencies
         run: npm ci --legacy-peer-deps

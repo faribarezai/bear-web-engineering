@@ -15,7 +15,7 @@
  * @returns {BearRow[]}
  */
 
-import type { BearRow } from './models';
+import type { BearRow } from './models.ts';
 
 export function parseBearRows(wikitext: string): BearRow[] {
   const bears = [];

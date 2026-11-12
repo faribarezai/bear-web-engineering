@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { Bear } from '../ts/models';
+import type { Bear } from '../ts/models.ts';
 
 interface BearCardProps {
   bear: Bear;

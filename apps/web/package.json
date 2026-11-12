@@ -1,5 +1,5 @@
 {
-  "name": "vite-playground2",
+  "name": "web",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -7,12 +7,12 @@
     "dev": "vite",
     "typecheck": "tsc --noEmit",
     "build": "npm run typecheck && vite build",
-    "lint": "eslint src --ext .js,.ts,.tsx",
-    "lint:fix": "eslint src --ext .js,.ts,.tsx --fix",
+    "lint": "eslint src --ext .js,.ts,.tsx --fix",
     "format": "prettier --write \"src/**/*.{js,ts,tsx}\"",
     "format:check": "prettier --check \"src/**/*.{js,ts,tsx}\"",
     "preview": "vite preview",
-    "prepare": "cd .. && husky vite-playground2/.husky"
+    "prepare": "husky"
+
   },
   "lint-staged": {
     "src/**/*.{js,ts,tsx}": [

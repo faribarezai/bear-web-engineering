@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import type { Bear } from '../ts/models';
-import { loadBears } from '../ts/bearService';
-import { BearCard } from './BearCard';
+import type { Bear } from '../ts/models.ts';
+import { loadBears } from '../ts/bearService.ts';
+import { BearCard } from './BearCard.tsx';
 
 export const MoreBears: React.FC = () => {
   // Explizite Zustände für das Remote Data Fetching
@@ -57,8 +57,8 @@ export const MoreBears: React.FC = () => {
 
       {/* 2. Error State mit explizitem null-Check */}
       {error !== null && (
-        <p role="alert" style={{ color: 'red', fontSize: '1.6rem' }}>
-          {error}
+        <p className="form-error">
+        {error}
         </p>
       )}
 

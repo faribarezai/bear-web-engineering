@@ -1,6 +1,6 @@
-import { fetchWikitext, fetchImageUrl } from './api';
-import { parseBearRows } from './parser';
-import type { Bear } from './models';
+import { fetchWikitext, fetchImageUrl } from './api.ts';
+import { parseBearRows } from './parser.ts';
+import type { Bear } from './models.ts';
 
 const PAGE_TITLE = 'List_of_ursids';
 
