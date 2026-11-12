@@ -55,19 +55,19 @@ export const MoreBears: React.FC = () => {
       {/* 1. Loading State */}
       {isLoading && <p>Loading bears from Wikipedia...</p>}
 
-      {/* 2. Error State mit explizitem null-Check */}
+      {/* 2. Error State mit null-Check */}
       {error !== null && <p className="form-error">{error}</p>}
 
-      {/* 3. Empty State mit explizitem null-Check */}
+      {/* 3. Empty State mit null-Check */}
       {!isLoading && error === null && bears.length === 0 && (
         <p>No bears found.</p>
       )}
 
-      {/* 4. Success State mit explizitem null-Check */}
+      {/* 4. Success State mit null-Check */}
       {!isLoading && error === null && bears.length > 0 && (
         <div className="bear-list">
           {bears.map((bear) => (
-            <BearCard key={bear.binomial} bear={bear} />
+            <BearCard key={bear.id} bear={bear} />
           ))}
         </div>
       )}

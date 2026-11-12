@@ -14,7 +14,7 @@ export const BearCard: React.FC<BearCardProps> = ({ bear }) => {
 
   const [imgSrc, setImgSrc] = useState<string>(initialImg);
 
-  const bearUrlPath = `/bear/${encodeURIComponent(bear.binomial)}`;
+  const bearUrlPath = `/bear/${encodeURIComponent(bear.id)}`;
 
   return (
     <div className="bear">
@@ -22,7 +22,7 @@ export const BearCard: React.FC<BearCardProps> = ({ bear }) => {
         <Link to={bearUrlPath}>{bear.name}</Link>
       </h3>
       <p>
-        <em>{bear.binomial}</em>
+        <em>{bear.id}</em>
       </p>
       <Link to={bearUrlPath}>
         <img

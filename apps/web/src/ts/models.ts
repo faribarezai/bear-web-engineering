@@ -1,12 +1,6 @@
-// Ergebnis des Parses
-export interface BearRow {
-  name: string;
-  binomial: string;
-  fileName: string | null;
-  range: string;
-}
 // Bear Object
 export interface Bear {
+  id: string;
   name: string;
   binomial: string;
   image: string | null;

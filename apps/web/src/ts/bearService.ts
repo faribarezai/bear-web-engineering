@@ -1,26 +1,47 @@
-import { fetchWikitext, fetchImageUrl } from './api.ts';
-import { parseBearRows } from './parser.ts';
 import type { Bear } from './models.ts';
 
-const PAGE_TITLE = 'List_of_ursids';
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
 
-export async function loadBears(): Promise<Bear[]> {
-  const wikitext = await fetchWikitext(PAGE_TITLE);
-  const rows = parseBearRows(wikitext);
+async function readApiError(
+  response: Response,
+  fallback: string
+): Promise<string> {
+  try {
+    const body = (await response.json()) as unknown;
+    if (isRecord(body) && typeof body.error === 'string') {
+      return body.error;
+    }
+  } catch {
+    // Ignorieren, falls kein JSON-Fehlerkörper vorhanden ist
+  }
+  return `${fallback} (HTTP ${response.status})`;
+}
 
-  // Load the image URLs asynchronously.
-  const imageUrls = await Promise.all(
-    rows.map(async (row) =>
-      row.fileName !== null && row.fileName !== ''
-        ? await fetchImageUrl(row.fileName)
-        : null
-    )
-  );
+export async function loadBears(signal?: AbortSignal): Promise<Bear[]> {
+  const response = await fetch('/api/bears', { signal });
 
-  return rows.map((row, index) => ({
-    name: row.name,
-    binomial: row.binomial,
-    range: row.range,
-    image: imageUrls[index],
-  }));
+  if (!response.ok) {
+    const message = await readApiError(response, 'Failed to load bears');
+    throw new Error(message);
+  }
+
+  return (await response.json()) as Bear[];
+}
+
+export async function loadBearById(
+  id: string,
+  signal?: AbortSignal
+): Promise<Bear> {
+  const response = await fetch(`/api/bears/${encodeURIComponent(id)}`, {
+    signal,
+  });
+
+  if (!response.ok) {
+    const message = await readApiError(response, 'Failed to load bear details');
+    throw new Error(message);
+  }
+
+  return (await response.json()) as Bear;
 }

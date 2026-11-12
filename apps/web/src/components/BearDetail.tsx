@@ -6,7 +6,7 @@ import { loadBears } from '../ts/bearService.ts';
 const FALLBACK_IMAGE = '/media/wild-bear.jpg';
 
 export const BearDetail: React.FC = () => {
-  const { binomial } = useParams<{ binomial: string }>();
+  const { id } = useParams<{ id: string }>();
 
   const [bear, setBear] = useState<Bear | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -16,7 +16,7 @@ export const BearDetail: React.FC = () => {
   useEffect(() => {
     const controller = new AbortController();
 
-    // 1. Expliziter Return Type : Promise<void>
+    // 1. Return Type : Promise<void>
     const fetchBearDetail = async (): Promise<void> => {
       setIsLoading(true);
       setError(null);
@@ -24,11 +24,11 @@ export const BearDetail: React.FC = () => {
       try {
         const bears = await loadBears();
         // 2. Nullish coalescing (?? statt ||) & Null-Check
-        const decodedBinomial = decodeURIComponent(binomial ?? '');
-        const foundBear = bears.find((b) => b.binomial === decodedBinomial);
+        const decodedID = decodeURIComponent(id ?? '');
+        const foundBear = bears.find((bear) => bear.id === decodedID);
 
         if (!controller.signal.aborted) {
-          // 3. Expliziter null/undefined-Check für Objekte
+          // 3. null/undefined-Check für Objekte
           if (foundBear !== undefined) {
             setBear(foundBear);
             // 4. Nullish coalescing (?? statt ||) & String-Check
@@ -57,7 +57,7 @@ export const BearDetail: React.FC = () => {
     return () => {
       controller.abort();
     };
-  }, [binomial]);
+  }, [id]);
 
   if (isLoading) {
     return (
@@ -70,7 +70,7 @@ export const BearDetail: React.FC = () => {
     );
   }
 
-  // 6. Explizite null-Checks für error und bear
+  // 6. null-Checks für error und bear
   if (error !== null || bear === null) {
     return (
       <article>
@@ -89,7 +89,7 @@ export const BearDetail: React.FC = () => {
     <article>
       <h2>{bear.name}</h2>
       <p>
-        <em>{bear.binomial}</em>
+        <em>{bear.id}</em>
       </p>
       <br />
       <img

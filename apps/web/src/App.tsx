@@ -11,11 +11,9 @@ export const App: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // 1. Strict boolean check & Nullish coalescing (?? statt ||)
   const queryParam = searchParams.get('q');
   const searchTerm = queryParam ?? '';
 
-  // 2. Expliziter Rückgabetyp: void
   const handleSearch = (query: string): void => {
     if (query.trim().length > 0) {
       setSearchParams({ q: query });
@@ -23,7 +21,6 @@ export const App: React.FC = () => {
       setSearchParams({});
     }
 
-    // 3. Void-Operator für unhandled Promise bei navigate() & explizite String-Prüfung
     const targetUrl = `/?${query.trim().length > 0 ? `q=${encodeURIComponent(query)}` : ''}`;
     void navigate(targetUrl);
   };
@@ -119,7 +116,7 @@ export const App: React.FC = () => {
           />
 
           {/* Bear Detail Route */}
-          <Route path="/bear/:binomial" element={<BearDetail />} />
+          <Route path="/bear/:id" element={<BearDetail />} />
         </Routes>
 
         <div className="secondary">

@@ -1,24 +1,7 @@
-// Pure text parsing: turns raw wikitext into plain JS objects
-// No fetch, no DOM - this makes it trivial to unit-test in isolation
-
-/**
- * @typedef {Object} BearRow
- * @property {string} name
- * @property {string} binomial
- * @property {string} fileName
- */
-
-/**
- * Extracts one row per bear species from the "Species table" wikitext,
- * in the same order as they appear on the page.
- * @param {string} wikitext
- * @returns {BearRow[]}
- */
-
-import type { BearRow } from './models.ts';
+import type { BearRow } from './schema.js';
 
 export function parseBearRows(wikitext: string): BearRow[] {
-  const bears = [];
+  const bears: BearRow[] = [];
 
   for (const row of wikitext.split('{{Species table/row').slice(1)) {
     const nameMatch = row.match(/\|name=\[\[(?:[^\]|]*\|)?([^\]]+)\]\]/);
