@@ -59,7 +59,7 @@ export const BearIdParamsSchema = z.object({
 });
 
 export const CommentIdParamsSchema = z.object({
-  commentId: z.string().min(1),
+  commentId: z.uuid(),
 });
 
 export const HealthResponseSchema = z.object({
