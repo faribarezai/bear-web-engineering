@@ -36,10 +36,12 @@ import {
   ServiceUnavailableError,
   type ValidationIssue,
 } from './errors.js';
-import { env, pool } from './db.js';
+import { db, env, pool } from './db.js';
+import { asc, eq } from 'drizzle-orm';
+import { bears } from './db/schema.js';
 
 const pkg = JSON.parse(
-    readFileSync(new URL('../package.json', import.meta.url), 'utf-8')
+  readFileSync(new URL('../package.json', import.meta.url), 'utf-8')
 ) as { version: string };
 
 interface ProblemDetails {
@@ -53,8 +55,8 @@ interface ProblemDetails {
 }
 
 const allowedOrigins = env.CORS_ORIGINS.split(',')
-    .map((origin) => origin.trim())
-    .filter((origin) => origin.length > 0);
+  .map((origin) => origin.trim())
+  .filter((origin) => origin.length > 0);
 
 const app = Fastify({
   logger: true,
@@ -97,7 +99,7 @@ await app.register(swagger, {
     info: {
       title: 'Wildlife & Ursids API',
       description:
-          'BFF for Wikipedia bear species and RESTful comments API with RFC 9457 Problem Details.',
+        'BFF for Wikipedia bear species and RESTful comments API with RFC 9457 Problem Details.',
       version: pkg.version,
     },
     servers: [
@@ -142,17 +144,17 @@ app.setErrorHandler(async (error, request, reply) => {
     };
 
     return await reply
-        .code(error.status)
-        .type('application/problem+json')
-        .send(problem);
+      .code(error.status)
+      .type('application/problem+json')
+      .send(problem);
   }
 
   // 2. Zod-Validierungsfehler aus Fastify-Schema -> 400 mit errors-Array
   if (hasZodFastifySchemaValidationErrors(error)) {
     const issues: ValidationIssue[] = error.validation.map((issue) => {
       const cleanPath = issue.instancePath
-          .replace(/^\//, '')
-          .replace(/\//g, '.');
+        .replace(/^\//, '')
+        .replace(/\//g, '.');
       return {
         field: cleanPath.length > 0 ? cleanPath : 'body',
         message: issue.message ?? 'Invalid input.',
@@ -177,14 +179,14 @@ app.setErrorHandler(async (error, request, reply) => {
   // 3. Fastify JSON-Parsing / Media-Type Fehler -> 400
   const fastifyErr = error as { statusCode?: number; message?: string };
   if (
-      typeof fastifyErr.statusCode === 'number' &&
-      fastifyErr.statusCode >= 400 &&
-      fastifyErr.statusCode < 500
+    typeof fastifyErr.statusCode === 'number' &&
+    fastifyErr.statusCode >= 400 &&
+    fastifyErr.statusCode < 500
   ) {
     const detail =
-        fastifyErr.statusCode === 415
-            ? 'Content-Type must be application/json.'
-            : 'Malformed JSON request body.';
+      fastifyErr.statusCode === 415
+        ? 'Content-Type must be application/json.'
+        : 'Malformed JSON request body.';
 
     request.log.warn({ err: error }, detail);
 
@@ -214,9 +216,9 @@ app.setErrorHandler(async (error, request, reply) => {
   };
 
   return await reply
-      .code(500)
-      .type('application/problem+json')
-      .send(internalProblem);
+    .code(500)
+    .type('application/problem+json')
+    .send(internalProblem);
 });
 
 app.setNotFoundHandler(async (request, reply) => {
@@ -238,215 +240,235 @@ app.setNotFoundHandler(async (request, reply) => {
 // --- Routen mit OpenAPI-Schemas ---
 
 app.get(
-    '/health',
-    {
-      schema: {
-        summary: 'Liveness check',
-        tags: ['System'],
-        response: {
-          200: HealthResponseSchema,
-        },
+  '/health',
+  {
+    schema: {
+      summary: 'Liveness check',
+      tags: ['System'],
+      response: {
+        200: HealthResponseSchema,
       },
     },
-    async () => ({
-      status: 'ok',
-      version: pkg.version,
-      uptime: process.uptime(),
-    })
+  },
+  async () => ({
+    status: 'ok',
+    version: pkg.version,
+    uptime: process.uptime(),
+  })
 );
 
 app.get(
-    '/health/ready',
-    {
-      schema: {
-        summary: 'Readiness check (verifies database connection)',
-        tags: ['System'],
-        response: {
-          200: z.object({ status: z.literal('ready') }),
-          503: ProblemDetailsSchema,
-        },
+  '/health/ready',
+  {
+    schema: {
+      summary: 'Readiness check (verifies database connection)',
+      tags: ['System'],
+      response: {
+        200: z.object({ status: z.literal('ready') }),
+        503: ProblemDetailsSchema,
       },
     },
-    async () => {
-      try {
-        await pool.query('SELECT 1');
-        return { status: 'ready' as const };
-      } catch {
-        throw new ServiceUnavailableError('Database is not reachable.');
-      }
+  },
+  async () => {
+    try {
+      await pool.query('SELECT 1');
+      return { status: 'ready' as const };
+    } catch {
+      throw new ServiceUnavailableError('Database is not reachable.');
     }
+  }
 );
 
 app.get(
-    '/debug/boom',
-    {
-      schema: {
-        summary: 'Provoke an internal server error (500 demo)',
-        tags: ['System'],
-        response: {
-          500: ProblemDetailsSchema,
-        },
+  '/debug/boom',
+  {
+    schema: {
+      summary: 'Provoke an internal server error (500 demo)',
+      tags: ['System'],
+      response: {
+        500: ProblemDetailsSchema,
       },
     },
-    async () => {
-      throw new Error(
-          'SECRET_DB_PASSWORD=supersecret; internal crash at line 42'
-      );
-    }
+  },
+  async () => {
+    throw new Error(
+      'SECRET_DB_PASSWORD=supersecret; internal crash at line 42'
+    );
+  }
 );
 
 app.get(
-    '/bears',
-    {
-      schema: {
-        summary: 'List all normalized bears from Wikipedia',
-        tags: ['Bears'],
-        response: {
-          200: BearsResponseSchema,
-          502: ProblemDetailsSchema,
-          504: ProblemDetailsSchema,
-        },
+  '/bears',
+  {
+    schema: {
+      summary: 'List all bears from database',
+      tags: ['Bears'],
+      response: {
+        200: BearsResponseSchema,
       },
     },
-    async () => {
-      return await getNormalizedBears();
-    }
+  },
+  async () => {
+    const rows = await db
+      .select({
+        id: bears.id,
+        name: bears.name,
+        binomial: bears.binomial,
+        range: bears.range,
+        image: bears.imageUrl,
+      })
+      .from(bears)
+      .orderBy(asc(bears.name));
+
+    return rows;
+  }
 );
 
 app.get(
-    '/bears/:id',
-    {
-      schema: {
-        summary: 'Get a single bear by slug ID',
-        tags: ['Bears'],
-        params: BearIdParamsSchema,
-        response: {
-          200: BearSchema,
-          404: ProblemDetailsSchema,
-          502: ProblemDetailsSchema,
-          504: ProblemDetailsSchema,
-        },
+  '/bears/:id',
+  {
+    schema: {
+      summary: 'Get a single bear by slug ID',
+      tags: ['Bears'],
+      params: BearIdParamsSchema,
+      response: {
+        200: BearSchema,
+        404: ProblemDetailsSchema,
       },
     },
-    async (request) => {
-      const bears = await getNormalizedBears();
-      const bear = bears.find((item) => item.id === request.params.id);
+  },
+  async (request) => {
+    const [bear] = await db
+      .select({
+        id: bears.id,
+        name: bears.name,
+        binomial: bears.binomial,
+        range: bears.range,
+        image: bears.imageUrl,
+      })
+      .from(bears)
+      .where(eq(bears.id, request.params.id));
 
-      if (bear === undefined) {
-        throw new NotFoundError(`Bear with id '${request.params.id}' not found.`);
-      }
-
-      return bear;
+    if (bear === undefined) {
+      throw new NotFoundError(`Bear with id '${request.params.id}' not found.`);
     }
+
+    return bear;
+  }
 );
 
 app.get(
-    '/bears/:id/comments',
-    {
-      schema: {
-        summary: 'List all comments for a bear',
-        tags: ['Comments'],
-        params: BearIdParamsSchema,
-        response: {
-          200: CommentsResponseSchema,
-          404: ProblemDetailsSchema,
-          502: ProblemDetailsSchema,
-          504: ProblemDetailsSchema,
-        },
+  '/bears/:id/comments',
+  {
+    schema: {
+      summary: 'List all comments for a bear',
+      tags: ['Comments'],
+      params: BearIdParamsSchema,
+      response: {
+        200: CommentsResponseSchema,
+        404: ProblemDetailsSchema,
+        502: ProblemDetailsSchema,
+        504: ProblemDetailsSchema,
       },
     },
-    async (request) => {
-      const bears = await getNormalizedBears();
-      const bearExists = bears.some((item) => item.id === request.params.id);
+  },
+  async (request) => {
+    const bears = await getNormalizedBears();
+    const bearExists = bears.some((item) => item.id === request.params.id);
 
-      if (!bearExists) {
-        throw new NotFoundError(`Bear with id '${request.params.id}' not found.`);
-      }
-
-      return getCommentsForBear(request.params.id);
+    if (!bearExists) {
+      throw new NotFoundError(`Bear with id '${request.params.id}' not found.`);
     }
+
+    return getCommentsForBear(request.params.id);
+  }
 );
 
 app.post(
-    '/bears/:id/comments',
-    {
-      schema: {
-        summary: 'Create a new comment for a bear',
-        tags: ['Comments'],
-        params: BearIdParamsSchema,
-        body: CreateCommentSchema,
-        response: {
-          201: CommentSchema,
-          400: ProblemDetailsSchema,
-          404: ProblemDetailsSchema,
-          502: ProblemDetailsSchema,
-          504: ProblemDetailsSchema,
-        },
+  '/bears/:id/comments',
+  {
+    schema: {
+      summary: 'Create a new comment for a bear',
+      tags: ['Comments'],
+      params: BearIdParamsSchema,
+      body: CreateCommentSchema,
+      response: {
+        201: CommentSchema,
+        400: ProblemDetailsSchema,
+        404: ProblemDetailsSchema,
+        502: ProblemDetailsSchema,
+        504: ProblemDetailsSchema,
       },
     },
-    async (request, reply) => {
-      const parsedBody = CreateCommentSchema.safeParse(request.body);
-      if (!parsedBody.success) {
-        const issues: ValidationIssue[] = parsedBody.error.issues.map((issue) => {
-          const path = issue.path.join('.');
-          return {
-            field: path.length > 0 ? path : 'body',
-            message: issue.message,
-          };
-        });
-        throw new BadRequestError('Invalid comment input.', issues);
-      }
-
-      const bears = await getNormalizedBears();
-      const bearExists = bears.some((item) => item.id === request.params.id);
-
-      if (!bearExists) {
-        throw new NotFoundError(`Bear with id '${request.params.id}' not found.`);
-      }
-
-      const comment = createComment(request.params.id, parsedBody.data);
-
-      return await reply
-          .code(201)
-          .header('Location', `/api/comments/${comment.id}`)
-          .send(comment);
+  },
+  async (request, reply) => {
+    const parsedBody = CreateCommentSchema.safeParse(request.body);
+    if (!parsedBody.success) {
+      const issues: ValidationIssue[] = parsedBody.error.issues.map((issue) => {
+        const path = issue.path.join('.');
+        return {
+          field: path.length > 0 ? path : 'body',
+          message: issue.message,
+        };
+      });
+      throw new BadRequestError('Invalid comment input.', issues);
     }
+
+    const bears = await getNormalizedBears();
+    const bearExists = bears.some((item) => item.id === request.params.id);
+
+    if (!bearExists) {
+      throw new NotFoundError(`Bear with id '${request.params.id}' not found.`);
+    }
+
+    const comment = createComment(request.params.id, parsedBody.data);
+
+    return await reply
+      .code(201)
+      .header('Location', `/api/comments/${comment.id}`)
+      .send(comment);
+  }
 );
 
 app.delete(
-    '/comments/:commentId',
-    {
-      schema: {
-        summary: 'Delete a comment by UUID',
-        tags: ['Comments'],
-        params: CommentIdParamsSchema,
-        response: {
-          204: z.null().describe('Comment deleted'),
-          404: ProblemDetailsSchema,
-        },
+  '/comments/:commentId',
+  {
+    schema: {
+      summary: 'Delete a comment by UUID',
+      tags: ['Comments'],
+      params: CommentIdParamsSchema,
+      response: {
+        204: z.null().describe('Comment deleted'),
+        404: ProblemDetailsSchema,
       },
     },
-    async (request, reply) => {
-      const deleted = deleteComment(request.params.commentId);
+  },
+  async (request, reply) => {
+    const deleted = deleteComment(request.params.commentId);
 
-      if (!deleted) {
-        throw new NotFoundError(
-            `Comment with id '${request.params.commentId}' not found.`
-        );
-      }
-
-      return await reply.code(204).send(null);
+    if (!deleted) {
+      throw new NotFoundError(
+        `Comment with id '${request.params.commentId}' not found.`
+      );
     }
+
+    return await reply.code(204).send(null);
+  }
 );
 
-const closeGracefully = async () => {
+const closeGracefully = async (): Promise<void> => {
   await app.close();
   await pool.end();
   process.exit(0);
 };
 
-process.on('SIGINT', closeGracefully);
-process.on('SIGTERM', closeGracefully);
+process.on('SIGINT', (): void => {
+  void closeGracefully();
+});
+
+process.on('SIGTERM', (): void => {
+  void closeGracefully();
+});
 
 try {
   await app.listen({ port: env.PORT, host: env.HOST });

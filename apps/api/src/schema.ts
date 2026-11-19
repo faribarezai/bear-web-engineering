@@ -5,7 +5,7 @@ export const BearSchema = z.object({
   name: z.string().min(1),
   binomial: z.string().min(1),
   range: z.string().min(1),
-  image: z.string().url().nullable(),
+  image: z.url().nullable(),
 });
 
 export type Bear = z.infer<typeof BearSchema>;
@@ -43,11 +43,11 @@ export const CreateCommentSchema = z.object({
 export type CreateCommentInput = z.infer<typeof CreateCommentSchema>;
 
 export const CommentSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   bearId: z.string().min(1),
   author: z.string().min(1),
   text: z.string().min(1),
-  createdAt: z.string().datetime(),
+  createdAt: z.iso.datetime(),
 });
 
 export type Comment = z.infer<typeof CommentSchema>;
