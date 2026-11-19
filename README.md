@@ -18,6 +18,8 @@ The project introduces a lot of code smells for you to tackle.
 * [1st Playground](#1-js-playground): 14.09.2026
 * [2nd Playground](#2-dependency--and-build-management-playground): 28.09.2026
 * [3rd Playground](#3-migrate-to-a-frontend-framework): 04.10.2026
+* [4th Playground] (#4-HTTP-API-Design-BFF): 13.11.2026
+* [5th Playground] (#5-persistence-datamodelling): 20.11.2026
 * other Playgrounds TBA by Thomas Berger
 
 ## Features
@@ -214,18 +216,20 @@ You might have noticed that the base project has a number of accessibility issue
 
 
 
-# Playground 4: backend — Tasks
+# 4.HTTP, API-Design, BFF
+Playground 4
 
-
-## Qualitäts-Checks ausführen:
-vor dem commit, lokal ausführen:
+### Qualitäts-Checks ausführen:
+run before commit, to make sure ci/cd won't fail.
 
 npm run format
 npm run lint
 npm run typecheck
 npm run build
 
-## Task 1: Set up the API workspace
+## Tasks
+
+### Task 1: Set up the API workspace
 
 - Set up npm workspaces with:
   - `apps/web`: React application
@@ -252,7 +256,7 @@ npm run build
 
 
 
-## Task 2: Move the Wikipedia call behind a BFF
+### Task 2: Move the Wikipedia call behind a BFF
 
 - Implement:
   - `GET /api/bears`
@@ -278,7 +282,7 @@ npm run build
 - What is a Backend for Frontend (BFF), and what moves from the browser to the server?
 - Why is an empty `200` response on upstream failure worse than a `502`?
 
-## Task 3: Design the comments API
+### Task 3: Design the comments API
 
 - Implement:
   - `GET /api/bears/:id/comments`
@@ -315,7 +319,7 @@ npm run build
 - Why must `DELETE` be idempotent?
 - What happens when a client retries a `POST`?
 
-## Task 4: One error format for everything
+### Task 4: One error format for everything
 
 - Create typed error classes.
 - Implement one Fastify error handler that renders responses as RFC 9457 `application/problem+json`.
@@ -345,7 +349,7 @@ npm run build
 - Which information must never leave the server?
 - How do request IDs connect a complaint to a log line?
 
-## Task 5: CORS and the API contract
+### Task 5: CORS and the API contract
 
 - Serve the built web app from another origin, for example:
   - `vite preview` on port `4173`
@@ -370,6 +374,75 @@ npm run build
 - What is the difference between simple and preflighted requests?
 - Why should `*` not be used together with credentials?
 - Why does a BFF make most CORS problems disappear?
+
+
+
+
+
+
+# 5.Persistence Datamodelling
+Playground 5 
+
+## Task 
+
+### Task 1: Add PostgreSQL to the stack
+- db service in compose.yaml: PostgreSQL current major, named volume, healthcheck; the API starts only when db is healthy
+- DATABASE_URL from the environment; all env vars validated with zod at startup
+- A connection pool (pg.Pool), never a connection per request
+- GET /health/ready: 200 only if a trivial query succeeds; /health stays a pure liveness check
+
+**Done** : on a clean clone docker compose up --build starts db and api; /health/ready returns a 503 Problem while the database is stopped and 200 once it is back.
+
+**Theory**: Liveness versus readiness: who uses each, and what goes
+
+
+
+### Task 2: Model bears and comments, first migration
+- Drizzle schema: bears (id = slug PK, name, binomial, image_url, range, fetched_at) and comments (uuid id, bear_id FK ON DELETE CASCADE, author, text, created_at) plus the indexes you expect
+- Generate the SQL migration with drizzle-kit and commit it; npm run db:migrate and npm run db:seed
+- The seed fetches bears through your Playground 4 BFF code (or a committed fixture) and upserts them
+- GET /api/bears now reads from the database
+
+**Done**: on an empty database db:migrate and db:seed create the tables and the bears, the migration SQL is in the repository, and the UI works without a live Wikipedia call.
+
+**Theory**: Why migrations instead of creating tables from code at startup? What does forward-only mean, and what goes wrong when two branches both create migration 0003? Natural versus surrogate key: when is which appropriate?
+
+
+
+
+### Task 3: Introduce a repository layer
+- BearRepository and CommentRepository as TypeScript interfaces, implemented with Drizzle
+- Route handlers and services depend on the interfaces only; the implementation is injected (Fastify decorators or plugin options)
+- Keep the in-memory implementation from Playground 4 and use it in your tests
+- Comments are now persisted
+
+**Done**: no route handler contains SQL or ORM calls; comments survive an API restart; the test suite runs against the in-memory repositories without a database.
+
+**Theory**: What does the repository hide, and what does it cost? Explain the N+1 problem using "comments for all bears" and show how your repository avoids it.
+
+
+
+
+### Task 4: Pagination, filtering and one measured index
+- GET /api/bears/:id/comments cursor-paginated: limit, cursor based on created_at and id, response contains nextCursor • ?q= on GET /api/bears filters by name
+- A script seeds 100,000 comments; EXPLAIN ANALYZE for the comments query without and with an index on (bear_id, created_at, id)
+- Both plans and timings go into your README; the index lives in a migration
+
+**Done**: the UI pages through comments; the README shows the two query plans and the measured difference; the index lives in a migration.
+
+**Theory**: Why does offset pagination get slower and skip or repeat rows, and how does a cursor avoid that? What is a B-tree index, why does the column order in a composite index matter, and why may PostgreSQL ignore an index on a small table?
+
+
+
+### Task 5: Transactions and the lost update
+- POST /api/comments/:id/report increments report_count; at three reports the comment is hidden (hidden_at)
+- First the naive version: read, increment in TypeScript, write; a script sends 50 concurrent reports; observe the final count
+- Then the fix: a transaction with SELECT ... FOR UPDATE, or an atomic UPDATE ... SET report_count = report_count + 1 ... RETURNING; run the script again
+- The transaction boundary belongs in the service, not in the repository
+
+**Done**: the race is reproducible with the naive version, the fixed version ends with exactly 50, and both the script and your explanation are in the repository.
+
+**Theory**: Explain ACID and the lost-update anomaly. What does PostgreSQL's default isolation level (read committed) guarantee, and what not? Compare pessimistic locking, atomic updates and optimistic concurrency with a version column.
 
 
 <p>© 2026 Leon Freudenthaler (Hochschule Campus Wien). All rights reversed.</p>

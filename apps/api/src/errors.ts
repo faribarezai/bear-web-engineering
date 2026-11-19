@@ -65,3 +65,14 @@ export class UpstreamError extends ProblemError {
     });
   }
 }
+
+export class ServiceUnavailableError extends ProblemError {
+  constructor(detail: string) {
+    super({
+      status: 503,
+      title: 'Service Unavailable',
+      detail,
+      type: 'https://example.org/problems/service-unavailable',
+    });
+  }
+}
