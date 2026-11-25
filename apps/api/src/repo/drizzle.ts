@@ -1,7 +1,7 @@
 import { asc, eq } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import type * as dbSchema from '../db/schema.js';
-import { bears, comments, users } from '../db/schema.js';
+import { bears, comments, users, sessions } from '../db/schema.js';
 import type {
   Bear,
   Comment,
@@ -17,6 +17,9 @@ import type {
   UserRepository,
 } from './types.js';
 import { ConflictError } from '../errors.js';
+
+import { randomBytes } from 'node:crypto';
+import type { SessionRecord, SessionRepository } from './types.js';
 
 type Database = NodePgDatabase<typeof dbSchema>;
 
@@ -181,5 +184,42 @@ export class DrizzleUserRepository implements UserRepository {
       }
       throw error;
     }
+  }
+}
+
+
+export class DrizzleSessionRepository implements SessionRepository {
+  constructor(private readonly db: NodePgDatabase<typeof dbSchema>) {}
+
+  async create(userId: string, expiresAt: Date): Promise<SessionRecord> {
+    const id = randomBytes(32).toString('base64url');
+    const [inserted] = await this.db
+        .insert(sessions)
+        .values({
+          id,
+          userId,
+          expiresAt,
+        })
+        .returning();
+
+    if (inserted === undefined) {
+      throw new Error('Failed to create session.');
+    }
+
+    return inserted;
+  }
+
+  async findById(id: string): Promise<SessionRecord | undefined> {
+    const [row] = await this.db
+        .select()
+        .from(sessions)
+        .where(eq(sessions.id, id))
+        .limit(1);
+
+    return row;
+  }
+
+  async deleteById(id: string): Promise<void> {
+    await this.db.delete(sessions).where(eq(sessions.id, id));
   }
 }

@@ -88,3 +88,14 @@ export class ConflictError extends ProblemError {
     });
   }
 }
+
+export class UnauthorizedError extends ProblemError {
+  constructor(detail: string) {
+    super({
+      status: 401,
+      title: 'Unauthorized',
+      detail,
+      type: 'https://example.org/problems/unauthorized',
+    });
+  }
+}

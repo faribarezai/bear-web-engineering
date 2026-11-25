@@ -471,6 +471,13 @@ enumeration?
 invalidates the credential
 - React app shows the logged-in user and a logout button
 
+#### ADR: Authentication Mechanism (Server-Side Sessions vs. JWT)
+- **Context:** The Bear application requires user authentication across its React SPA and Fastify API, backed by an existing PostgreSQL database, with immediate logout invalidation and protection against XSS/CSRF.
+- **Options:** (1) Stateless signed JWTs stored in `localStorage` or cookies; (2) Stateful server-side sessions stored in PostgreSQL referenced by a random `HttpOnly` session cookie.
+- **Decision:** We chose **server-side sessions in PostgreSQL** with an opaque random session ID stored in a cookie (`HttpOnly`, `SameSite=Lax`, `Secure` in production, `Path=/`).
+- **Consequences:** Logout immediately revokes access by deleting the session row in PostgreSQL, and `HttpOnly` prevents JavaScript/XSS from reading the credential. In return, every authenticated request incurs one indexed database lookup (`sessions.id`).
+
+
 **Done**: /api/auth/me returns the user after login and a 401 Problem after logout or without a cookie; the
 ADR is in the README.
 

@@ -33,3 +33,16 @@ export interface UserRepository {
   findById: (id: string) => Promise<UserRecord | undefined>;
   create: (params: CreateUserParams) => Promise<User>;
 }
+
+export interface SessionRecord {
+  id: string;
+  userId: string;
+  expiresAt: Date;
+  createdAt: Date;
+}
+
+export interface SessionRepository {
+  create: (userId: string, expiresAt: Date) => Promise<SessionRecord>;
+  findById: (id: string) => Promise<SessionRecord | undefined>;
+  deleteById: (id: string) => Promise<void>;
+}

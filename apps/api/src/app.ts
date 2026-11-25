@@ -6,6 +6,7 @@ import Fastify, {
   type RawServerDefault,
 } from 'fastify';
 
+import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
@@ -29,9 +30,11 @@ import {
   CommentsResponseSchema,
   CreateCommentSchema,
   HealthResponseSchema,
+  LoginUserSchema,
   ProblemDetailsSchema,
   RegisterUserSchema,
   UserSchema,
+  type User,
 } from './schema.js';
 import {
   BadRequestError,
@@ -39,16 +42,22 @@ import {
   NotFoundError,
   ProblemError,
   ServiceUnavailableError,
+  UnauthorizedError,
   type ValidationIssue,
 } from './errors.js';
 import type {
   BearRepository,
   CommentRepository,
+  SessionRepository,
   UserRepository,
 } from './repo/types.js';
 
+const SESSION_COOKIE_NAME = 'sid';
+const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const isProduction = process.env.NODE_ENV === 'production';
+
 const pkg = JSON.parse(
-  readFileSync(new URL('../package.json', import.meta.url), 'utf-8')
+    readFileSync(new URL('../package.json', import.meta.url), 'utf-8')
 ) as { version: string };
 
 interface ProblemDetails {
@@ -65,6 +74,7 @@ export interface AppDependencies {
   bearRepo: BearRepository;
   commentRepo: CommentRepository;
   userRepo: UserRepository;
+  sessionRepo: SessionRepository;
   checkReady: () => Promise<boolean>;
   corsOrigins?: string;
 }
@@ -74,22 +84,26 @@ declare module 'fastify' {
     bearRepo: BearRepository;
     commentRepo: CommentRepository;
     userRepo: UserRepository;
+    sessionRepo: SessionRepository;
+  }
+  interface FastifyRequest {
+    currentUser?: User;
   }
 }
 
 export type AppInstance = FastifyInstance<
-  RawServerDefault,
-  RawRequestDefaultExpression,
-  RawReplyDefaultExpression,
-  FastifyBaseLogger,
-  ZodTypeProvider
+    RawServerDefault,
+    RawRequestDefaultExpression,
+    RawReplyDefaultExpression,
+    FastifyBaseLogger,
+    ZodTypeProvider
 >;
 
 export async function buildApp(deps: AppDependencies): Promise<AppInstance> {
   const allowedOrigins = (deps.corsOrigins ?? 'http://localhost:5173')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter((origin) => origin.length > 0);
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter((origin) => origin.length > 0);
 
   const app = Fastify({
     logger: true,
@@ -108,9 +122,35 @@ export async function buildApp(deps: AppDependencies): Promise<AppInstance> {
   app.decorate('bearRepo', deps.bearRepo);
   app.decorate('commentRepo', deps.commentRepo);
   app.decorate('userRepo', deps.userRepo);
+  app.decorate('sessionRepo', deps.sessionRepo);
 
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
+
+  // Cookies & Session-Auflösung für jeden Request
+  await app.register(cookie);
+
+  app.addHook('onRequest', async (request) => {
+    const sessionId = request.cookies[SESSION_COOKIE_NAME];
+    if (typeof sessionId !== 'string' || sessionId.length === 0) return;
+
+    const session = await app.sessionRepo.findById(sessionId);
+    if (session === undefined) return;
+
+    if (session.expiresAt.getTime() <= Date.now()) {
+      await app.sessionRepo.deleteById(session.id);
+      return;
+    }
+
+    const userRecord = await app.userRepo.findById(session.userId);
+    if (userRecord === undefined) {
+      await app.sessionRepo.deleteById(session.id);
+      return;
+    }
+
+    const { passwordHash: _ignored, ...publicUser } = userRecord;
+    request.currentUser = publicUser;
+  });
 
   // 1. CORS mit strikter Allow-List aus Umgebungsvariable
   await app.register(cors, {
@@ -125,6 +165,7 @@ export async function buildApp(deps: AppDependencies): Promise<AppInstance> {
       }
       callback(null, false);
     },
+    credentials: true,
     methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'x-request-id'],
     exposedHeaders: ['Location', 'x-request-id'],
@@ -137,7 +178,7 @@ export async function buildApp(deps: AppDependencies): Promise<AppInstance> {
       info: {
         title: 'Wildlife & Ursids API',
         description:
-          'BFF for Wikipedia bear species and RESTful comments API with RFC 9457 Problem Details.',
+            'BFF for Wikipedia bear species and RESTful comments API with RFC 9457 Problem Details.',
         version: pkg.version,
       },
       servers: [
@@ -163,7 +204,7 @@ export async function buildApp(deps: AppDependencies): Promise<AppInstance> {
   app.setErrorHandler(async (error, request, reply) => {
     const instance = `${request.url}#${request.id}`;
 
-    // 1. Eigene typisierte ProblemErrors (400, 404, 502, 503, 504)
+    // 1. Eigene typisierte ProblemErrors (400, 401, 404, 409, 502, 503, 504)
     if (error instanceof ProblemError) {
       if (error.status >= 500) {
         request.log.error({ err: error }, error.detail);
@@ -182,17 +223,17 @@ export async function buildApp(deps: AppDependencies): Promise<AppInstance> {
       };
 
       return await reply
-        .code(error.status)
-        .type('application/problem+json')
-        .send(problem);
+          .code(error.status)
+          .type('application/problem+json')
+          .send(problem);
     }
 
     // 2. Zod-Validierungsfehler aus Fastify-Schema -> 400 mit errors-Array
     if (hasZodFastifySchemaValidationErrors(error)) {
       const issues: ValidationIssue[] = error.validation.map((issue) => {
         const cleanPath = issue.instancePath
-          .replace(/^\//, '')
-          .replace(/\//g, '.');
+            .replace(/^\//, '')
+            .replace(/\//g, '.');
         return {
           field: cleanPath.length > 0 ? cleanPath : 'body',
           message: issue.message ?? 'Invalid input.',
@@ -212,22 +253,22 @@ export async function buildApp(deps: AppDependencies): Promise<AppInstance> {
       };
 
       return await reply
-        .code(400)
-        .type('application/problem+json')
-        .send(problem);
+          .code(400)
+          .type('application/problem+json')
+          .send(problem);
     }
 
     // 3. Fastify JSON-Parsing / Media-Type Fehler -> 400
     const fastifyErr = error as { statusCode?: number; message?: string };
     if (
-      typeof fastifyErr.statusCode === 'number' &&
-      fastifyErr.statusCode >= 400 &&
-      fastifyErr.statusCode < 500
+        typeof fastifyErr.statusCode === 'number' &&
+        fastifyErr.statusCode >= 400 &&
+        fastifyErr.statusCode < 500
     ) {
       const detail =
-        fastifyErr.statusCode === 415
-          ? 'Content-Type must be application/json.'
-          : 'Malformed JSON request body.';
+          fastifyErr.statusCode === 415
+              ? 'Content-Type must be application/json.'
+              : 'Malformed JSON request body.';
 
       request.log.warn({ err: error }, detail);
 
@@ -242,9 +283,9 @@ export async function buildApp(deps: AppDependencies): Promise<AppInstance> {
       };
 
       return await reply
-        .code(400)
-        .type('application/problem+json')
-        .send(problem);
+          .code(400)
+          .type('application/problem+json')
+          .send(problem);
     }
 
     // 4. Unerwartete Fehler -> 500 ohne Stacktrace oder Interna
@@ -260,9 +301,9 @@ export async function buildApp(deps: AppDependencies): Promise<AppInstance> {
     };
 
     return await reply
-      .code(500)
-      .type('application/problem+json')
-      .send(internalProblem);
+        .code(500)
+        .type('application/problem+json')
+        .send(internalProblem);
   });
 
   app.setNotFoundHandler(async (request, reply) => {
@@ -284,244 +325,338 @@ export async function buildApp(deps: AppDependencies): Promise<AppInstance> {
   // --- Routen mit OpenAPI-Schemas (nur über Repository-Interfaces!) ---
 
   app.get(
-    '/health',
-    {
-      schema: {
-        summary: 'Liveness check',
-        tags: ['System'],
-        response: {
-          200: HealthResponseSchema,
+      '/health',
+      {
+        schema: {
+          summary: 'Liveness check',
+          tags: ['System'],
+          response: {
+            200: HealthResponseSchema,
+          },
         },
       },
-    },
-    async () => ({
-      status: 'ok',
-      version: pkg.version,
-      uptime: process.uptime(),
-    })
+      async () => ({
+        status: 'ok',
+        version: pkg.version,
+        uptime: process.uptime(),
+      })
   );
 
   app.get(
-    '/health/ready',
-    {
-      schema: {
-        summary: 'Readiness check (verifies database connection)',
-        tags: ['System'],
-        response: {
-          200: z.object({ status: z.literal('ready') }),
-          503: ProblemDetailsSchema,
+      '/health/ready',
+      {
+        schema: {
+          summary: 'Readiness check (verifies database connection)',
+          tags: ['System'],
+          response: {
+            200: z.object({ status: z.literal('ready') }),
+            503: ProblemDetailsSchema,
+          },
         },
       },
-    },
-    async () => {
-      const ready = await deps.checkReady();
-      if (!ready) {
-        throw new ServiceUnavailableError('Database is not reachable.');
+      async () => {
+        const ready = await deps.checkReady();
+        if (!ready) {
+          throw new ServiceUnavailableError('Database is not reachable.');
+        }
+        return { status: 'ready' as const };
       }
-      return { status: 'ready' as const };
-    }
   );
 
   app.get(
-    '/debug/boom',
-    {
-      schema: {
-        summary: 'Provoke an internal server error (500 demo)',
-        tags: ['System'],
-        response: {
-          500: ProblemDetailsSchema,
+      '/debug/boom',
+      {
+        schema: {
+          summary: 'Provoke an internal server error (500 demo)',
+          tags: ['System'],
+          response: {
+            500: ProblemDetailsSchema,
+          },
         },
       },
-    },
-    async () => {
-      throw new Error(
-        'SECRET_DB_PASSWORD=supersecret; internal crash at line 42'
-      );
-    }
-  );
-
-  app.get(
-    '/bears',
-    {
-      schema: {
-        summary: 'List all bears',
-        tags: ['Bears'],
-        response: {
-          200: BearsResponseSchema,
-        },
-      },
-    },
-    async () => {
-      return await app.bearRepo.findAll();
-    }
-  );
-
-  app.get(
-    '/bears/:id',
-    {
-      schema: {
-        summary: 'Get a single bear by slug ID',
-        tags: ['Bears'],
-        params: BearIdParamsSchema,
-        response: {
-          200: BearSchema,
-          404: ProblemDetailsSchema,
-        },
-      },
-    },
-    async (request) => {
-      const bear = await app.bearRepo.findById(request.params.id);
-
-      if (bear === undefined) {
-        throw new NotFoundError(
-          `Bear with id '${request.params.id}' not found.`
+      async () => {
+        throw new Error(
+            'SECRET_DB_PASSWORD=supersecret; internal crash at line 42'
         );
       }
-
-      return bear;
-    }
   );
 
   app.get(
-    '/bears/:id/comments',
-    {
-      schema: {
-        summary: 'List all comments for a bear',
-        tags: ['Comments'],
-        params: BearIdParamsSchema,
-        response: {
-          200: CommentsResponseSchema,
-          404: ProblemDetailsSchema,
+      '/bears',
+      {
+        schema: {
+          summary: 'List all bears',
+          tags: ['Bears'],
+          response: {
+            200: BearsResponseSchema,
+          },
         },
       },
-    },
-    async (request) => {
-      const bear = await app.bearRepo.findById(request.params.id);
-
-      if (bear === undefined) {
-        throw new NotFoundError(
-          `Bear with id '${request.params.id}' not found.`
-        );
+      async () => {
+        return await app.bearRepo.findAll();
       }
+  );
 
-      return await app.commentRepo.findByBearId(request.params.id);
-    }
+  app.get(
+      '/bears/:id',
+      {
+        schema: {
+          summary: 'Get a single bear by slug ID',
+          tags: ['Bears'],
+          params: BearIdParamsSchema,
+          response: {
+            200: BearSchema,
+            404: ProblemDetailsSchema,
+          },
+        },
+      },
+      async (request) => {
+        const bear = await app.bearRepo.findById(request.params.id);
+
+        if (bear === undefined) {
+          throw new NotFoundError(
+              `Bear with id '${request.params.id}' not found.`
+          );
+        }
+
+        return bear;
+      }
+  );
+
+  app.get(
+      '/bears/:id/comments',
+      {
+        schema: {
+          summary: 'List all comments for a bear',
+          tags: ['Comments'],
+          params: BearIdParamsSchema,
+          response: {
+            200: CommentsResponseSchema,
+            404: ProblemDetailsSchema,
+          },
+        },
+      },
+      async (request) => {
+        const bear = await app.bearRepo.findById(request.params.id);
+
+        if (bear === undefined) {
+          throw new NotFoundError(
+              `Bear with id '${request.params.id}' not found.`
+          );
+        }
+
+        return await app.commentRepo.findByBearId(request.params.id);
+      }
   );
 
   app.post(
-    '/bears/:id/comments',
-    {
-      schema: {
-        summary: 'Create a new comment for a bear',
-        tags: ['Comments'],
-        params: BearIdParamsSchema,
-        body: CreateCommentSchema,
-        response: {
-          201: CommentSchema,
-          400: ProblemDetailsSchema,
-          404: ProblemDetailsSchema,
+      '/bears/:id/comments',
+      {
+        schema: {
+          summary: 'Create a new comment for a bear',
+          tags: ['Comments'],
+          params: BearIdParamsSchema,
+          body: CreateCommentSchema,
+          response: {
+            201: CommentSchema,
+            400: ProblemDetailsSchema,
+            404: ProblemDetailsSchema,
+          },
         },
       },
-    },
-    async (request, reply) => {
-      const parsedBody = CreateCommentSchema.safeParse(request.body);
-      if (!parsedBody.success) {
-        const issues: ValidationIssue[] = parsedBody.error.issues.map(
-          (issue) => {
-            const path = issue.path.join('.');
-            return {
-              field: path.length > 0 ? path : 'body',
-              message: issue.message,
-            };
-          }
+      async (request, reply) => {
+        const parsedBody = CreateCommentSchema.safeParse(request.body);
+        if (!parsedBody.success) {
+          const issues: ValidationIssue[] = parsedBody.error.issues.map(
+              (issue) => {
+                const path = issue.path.join('.');
+                return {
+                  field: path.length > 0 ? path : 'body',
+                  message: issue.message,
+                };
+              }
+          );
+          throw new BadRequestError('Invalid comment input.', issues);
+        }
+
+        const bear = await app.bearRepo.findById(request.params.id);
+
+        if (bear === undefined) {
+          throw new NotFoundError(
+              `Bear with id '${request.params.id}' not found.`
+          );
+        }
+
+        const comment = await app.commentRepo.create(
+            request.params.id,
+            parsedBody.data
         );
-        throw new BadRequestError('Invalid comment input.', issues);
+
+        return await reply
+            .code(201)
+            .header('Location', `/api/comments/${comment.id}`)
+            .send(comment);
       }
-
-      const bear = await app.bearRepo.findById(request.params.id);
-
-      if (bear === undefined) {
-        throw new NotFoundError(
-          `Bear with id '${request.params.id}' not found.`
-        );
-      }
-
-      const comment = await app.commentRepo.create(
-        request.params.id,
-        parsedBody.data
-      );
-
-      return await reply
-        .code(201)
-        .header('Location', `/api/comments/${comment.id}`)
-        .send(comment);
-    }
   );
 
   app.post(
-    '/auth/register',
-    {
-      schema: {
-        summary: 'Register a new user account',
-        tags: ['Auth'],
-        body: RegisterUserSchema,
-        response: {
-          201: UserSchema,
-          400: ProblemDetailsSchema,
-          409: ProblemDetailsSchema,
+      '/auth/register',
+      {
+        schema: {
+          summary: 'Register a new user account',
+          tags: ['Auth'],
+          body: RegisterUserSchema,
+          response: {
+            201: UserSchema,
+            400: ProblemDetailsSchema,
+            409: ProblemDetailsSchema,
+          },
         },
       },
-    },
-    async (request, reply) => {
-      const { email, password } = request.body;
+      async (request, reply) => {
+        const { email, password } = request.body;
 
-      const existing = await app.userRepo.findByEmail(email);
-      if (existing !== undefined) {
-        throw new ConflictError(`A user with email '${email}' already exists.`);
+        const existing = await app.userRepo.findByEmail(email);
+        if (existing !== undefined) {
+          throw new ConflictError(`A user with email '${email}' already exists.`);
+        }
+
+        const passwordHash = await argon2.hash(password, {
+          type: argon2.argon2id,
+        });
+
+        const user = await app.userRepo.create({
+          email,
+          passwordHash,
+        });
+
+        return await reply
+            .code(201)
+            .header('Location', `/api/users/${user.id}`)
+            .send(user);
       }
+  );
 
-      const passwordHash = await argon2.hash(password, {
-        type: argon2.argon2id,
-      });
+  app.post(
+      '/auth/login',
+      {
+        schema: {
+          summary: 'Log in with email and password',
+          tags: ['Auth'],
+          body: LoginUserSchema,
+          response: {
+            200: UserSchema,
+            400: ProblemDetailsSchema,
+            401: ProblemDetailsSchema,
+          },
+        },
+      },
+      async (request, reply) => {
+        const { email, password } = request.body;
 
-      const user = await app.userRepo.create({
-        email,
-        passwordHash,
-      });
+        const userRecord = await app.userRepo.findByEmail(email);
+        if (userRecord === undefined) {
+          throw new UnauthorizedError('Invalid email or password.');
+        }
 
-      return await reply
-        .code(201)
-        .header('Location', `/api/users/${user.id}`)
-        .send(user);
-    }
+        const validPassword = await argon2.verify(
+            userRecord.passwordHash,
+            password
+        );
+        if (!validPassword) {
+          throw new UnauthorizedError('Invalid email or password.');
+        }
+
+        const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
+        const session = await app.sessionRepo.create(userRecord.id, expiresAt);
+
+        void reply.setCookie(SESSION_COOKIE_NAME, session.id, {
+          httpOnly: true,
+          secure: isProduction,
+          sameSite: 'lax',
+          path: '/',
+          expires: expiresAt,
+        });
+
+        const { passwordHash: _ignored, ...publicUser } = userRecord;
+        return await reply.code(200).send(publicUser);
+      }
+  );
+
+  app.post(
+      '/auth/logout',
+      {
+        schema: {
+          summary: 'Log out and invalidate current session',
+          tags: ['Auth'],
+          response: {
+            204: z.null().describe('Logged out'),
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionId = request.cookies[SESSION_COOKIE_NAME];
+        if (typeof sessionId === 'string' && sessionId.length > 0) {
+          await app.sessionRepo.deleteById(sessionId);
+        }
+
+        void reply.clearCookie(SESSION_COOKIE_NAME, {
+          httpOnly: true,
+          secure: isProduction,
+          sameSite: 'lax',
+          path: '/',
+        });
+
+        return await reply.code(204).send(null);
+      }
+  );
+
+  app.get(
+      '/auth/me',
+      {
+        schema: {
+          summary: 'Get currently authenticated user',
+          tags: ['Auth'],
+          response: {
+            200: UserSchema,
+            401: ProblemDetailsSchema,
+          },
+        },
+      },
+      async (request) => {
+        if (request.currentUser === undefined) {
+          throw new UnauthorizedError('Authentication required.');
+        }
+        return request.currentUser;
+      }
   );
 
   app.delete(
-    '/comments/:commentId',
-    {
-      schema: {
-        summary: 'Delete a comment by UUID',
-        tags: ['Comments'],
-        params: CommentIdParamsSchema,
-        response: {
-          204: z.null().describe('Comment deleted'),
-          404: ProblemDetailsSchema,
+      '/comments/:commentId',
+      {
+        schema: {
+          summary: 'Delete a comment by UUID',
+          tags: ['Comments'],
+          params: CommentIdParamsSchema,
+          response: {
+            204: z.null().describe('Comment deleted'),
+            404: ProblemDetailsSchema,
+          },
         },
       },
-    },
-    async (request, reply) => {
-      const deleted = await app.commentRepo.deleteById(
-        request.params.commentId
-      );
-
-      if (!deleted) {
-        throw new NotFoundError(
-          `Comment with id '${request.params.commentId}' not found.`
+      async (request, reply) => {
+        const deleted = await app.commentRepo.deleteById(
+            request.params.commentId
         );
-      }
 
-      return await reply.code(204).send(null);
-    }
+        if (!deleted) {
+          throw new NotFoundError(
+              `Comment with id '${request.params.commentId}' not found.`
+          );
+        }
+
+        return await reply.code(204).send(null);
+      }
   );
 
   return app;

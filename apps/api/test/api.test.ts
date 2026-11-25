@@ -4,6 +4,7 @@ import { buildApp } from '../src/app.js';
 import {
     InMemoryBearRepository,
     InMemoryCommentRepository,
+    InMemorySessionRepository,
     InMemoryUserRepository,
 } from '../src/repo/memory.js';
 
@@ -19,11 +20,13 @@ function createTestApp() {
     ]);
     const commentRepo = new InMemoryCommentRepository();
     const userRepo = new InMemoryUserRepository();
+    const sessionRepo = new InMemorySessionRepository();
 
     return buildApp({
         bearRepo,
         commentRepo,
         userRepo,
+        sessionRepo,
         checkReady: async () => true,
     });
 }
@@ -42,8 +45,6 @@ describe('Bears & Comments API (In-Memory Repositories)', () => {
             url: '/bears/unknown-bear',
         });
         assert.equal(missingRes.statusCode, 404);
-        //assert.equal(missingRes.headers['content-type'], 'application/problem+json');
-        //prüft, ob header mit application/problem+json beginnt
         assert.ok(
             missingRes.headers['content-type']?.startsWith('application/problem+json')
         );

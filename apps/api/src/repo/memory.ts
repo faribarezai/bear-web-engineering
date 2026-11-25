@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID, randomBytes } from 'node:crypto';
 import type { Bear, Comment, CreateCommentInput, User } from '../schema.js';
 import type {
   BearRepository,
@@ -6,6 +6,8 @@ import type {
   CreateUserParams,
   UserRepository,
   UserRecord,
+  SessionRecord,
+  SessionRepository,
 } from './types.js';
 import { ConflictError } from '../errors.js';
 
@@ -96,5 +98,28 @@ export class InMemoryUserRepository implements UserRepository {
 
     const { passwordHash: _ignored, ...publicUser } = record;
     return publicUser;
+  }
+}
+
+export class InMemorySessionRepository implements SessionRepository {
+  private readonly sessions = new Map<string, SessionRecord>();
+
+  async create(userId: string, expiresAt: Date): Promise<SessionRecord> {
+    const record: SessionRecord = {
+      id: randomBytes(32).toString('base64url'),
+      userId,
+      expiresAt,
+      createdAt: new Date(),
+    };
+    this.sessions.set(record.id, record);
+    return record;
+  }
+
+  async findById(id: string): Promise<SessionRecord | undefined> {
+    return this.sessions.get(id);
+  }
+
+  async deleteById(id: string): Promise<void> {
+    this.sessions.delete(id);
   }
 }

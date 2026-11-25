@@ -7,7 +7,11 @@ import { RegisterForm } from './components/RegisterForm.tsx';
 import { Header } from './components/Header.tsx';
 import { Navbar } from './components/Navbar.tsx';
 
+import { useState } from 'react';
+import { LoginPanel, type AuthUser } from './components/LoginPanel.tsx';
+
 export const App: React.FC = () => {
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -119,7 +123,8 @@ export const App: React.FC = () => {
         </Routes>
 
         <div className="secondary">
-          <RegisterForm />
+            <LoginPanel user={user} onUserChange={setUser} />
+            {user === null && <RegisterForm />}
           <h2>Related</h2>
           <ul>
             <li>
