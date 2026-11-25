@@ -15,9 +15,9 @@ export interface CommentRepository {
   findByBearId: (bearId: string) => Promise<Comment[]>;
   findById: (commentId: string) => Promise<Comment | undefined>;
   create: (
-      bearId: string,
-      input: CreateCommentInput,
-      authorId: string
+    bearId: string,
+    input: CreateCommentInput,
+    authorId: string
   ) => Promise<Comment>;
   deleteById: (commentId: string) => Promise<boolean>;
 }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Routes, Route, useSearchParams, useNavigate } from 'react-router-dom';
 import { MoreBears } from './components/MoreBears.tsx';
 import { BearDetail } from './components/BearDetail.tsx';
@@ -7,7 +7,6 @@ import { RegisterForm } from './components/RegisterForm.tsx';
 import { Header } from './components/Header.tsx';
 import { Navbar } from './components/Navbar.tsx';
 
-import { useState } from 'react';
 import { LoginPanel, type AuthUser } from './components/LoginPanel.tsx';
 
 export const App: React.FC = () => {
@@ -123,8 +122,8 @@ export const App: React.FC = () => {
         </Routes>
 
         <div className="secondary">
-            <LoginPanel user={user} onUserChange={setUser} />
-            {user === null && <RegisterForm />}
+          <LoginPanel user={user} onUserChange={setUser} />
+          {user === null && <RegisterForm />}
           <h2>Related</h2>
           <ul>
             <li>

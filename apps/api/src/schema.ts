@@ -108,7 +108,6 @@ export const ProblemDetailsSchema = z.object({
   errors: z.array(ValidationIssueSchema).optional(),
 });
 
-
 export const LoginUserSchema = z.object({
   email: z.email('Invalid email format.').trim().toLowerCase(),
   password: z.string().min(1, 'Password is required.'),

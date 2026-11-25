@@ -49,9 +49,9 @@ export class InMemoryCommentRepository implements CommentRepository {
   }
 
   async create(
-      bearId: string,
-      input: CreateCommentInput,
-      authorId: string
+    bearId: string,
+    input: CreateCommentInput,
+    authorId: string
   ): Promise<Comment> {
     const comment: Comment = {
       id: randomUUID(),

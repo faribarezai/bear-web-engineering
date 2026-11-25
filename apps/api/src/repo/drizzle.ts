@@ -15,11 +15,12 @@ import type {
   CreateUserParams,
   UserRecord,
   UserRepository,
+  SessionRecord,
+  SessionRepository,
 } from './types.js';
 import { ConflictError } from '../errors.js';
 
 import { randomBytes } from 'node:crypto';
-import type { SessionRecord, SessionRepository } from './types.js';
 
 type Database = NodePgDatabase<typeof dbSchema>;
 
@@ -60,10 +61,10 @@ export class DrizzleCommentRepository implements CommentRepository {
 
   async findByBearId(bearId: string): Promise<Comment[]> {
     const rows = await this.db
-        .select()
-        .from(comments)
-        .where(eq(comments.bearId, bearId))
-        .orderBy(asc(comments.createdAt));
+      .select()
+      .from(comments)
+      .where(eq(comments.bearId, bearId))
+      .orderBy(asc(comments.createdAt));
 
     return rows.map((row) => ({
       id: row.id,
@@ -77,10 +78,10 @@ export class DrizzleCommentRepository implements CommentRepository {
 
   async findById(commentId: string): Promise<Comment | undefined> {
     const [row] = await this.db
-        .select()
-        .from(comments)
-        .where(eq(comments.id, commentId))
-        .limit(1);
+      .select()
+      .from(comments)
+      .where(eq(comments.id, commentId))
+      .limit(1);
 
     if (row === undefined) {
       return undefined;
@@ -97,19 +98,19 @@ export class DrizzleCommentRepository implements CommentRepository {
   }
 
   async create(
-      bearId: string,
-      input: CreateCommentInput,
-      authorId: string
+    bearId: string,
+    input: CreateCommentInput,
+    authorId: string
   ): Promise<Comment> {
     const [created] = await this.db
-        .insert(comments)
-        .values({
-          bearId,
-          authorId,
-          author: input.author,
-          text: input.text,
-        })
-        .returning();
+      .insert(comments)
+      .values({
+        bearId,
+        authorId,
+        author: input.author,
+        text: input.text,
+      })
+      .returning();
 
     if (created === undefined) {
       throw new Error('Failed to insert comment.');
@@ -127,9 +128,9 @@ export class DrizzleCommentRepository implements CommentRepository {
 
   async deleteById(commentId: string): Promise<boolean> {
     const deleted = await this.db
-        .delete(comments)
-        .where(eq(comments.id, commentId))
-        .returning({ id: comments.id });
+      .delete(comments)
+      .where(eq(comments.id, commentId))
+      .returning({ id: comments.id });
 
     return deleted.length > 0;
   }
@@ -215,20 +216,19 @@ export class DrizzleUserRepository implements UserRepository {
   }
 }
 
-
 export class DrizzleSessionRepository implements SessionRepository {
   constructor(private readonly db: NodePgDatabase<typeof dbSchema>) {}
 
   async create(userId: string, expiresAt: Date): Promise<SessionRecord> {
     const id = randomBytes(32).toString('base64url');
     const [inserted] = await this.db
-        .insert(sessions)
-        .values({
-          id,
-          userId,
-          expiresAt,
-        })
-        .returning();
+      .insert(sessions)
+      .values({
+        id,
+        userId,
+        expiresAt,
+      })
+      .returning();
 
     if (inserted === undefined) {
       throw new Error('Failed to create session.');
@@ -239,10 +239,10 @@ export class DrizzleSessionRepository implements SessionRepository {
 
   async findById(id: string): Promise<SessionRecord | undefined> {
     const [row] = await this.db
-        .select()
-        .from(sessions)
-        .where(eq(sessions.id, id))
-        .limit(1);
+      .select()
+      .from(sessions)
+      .where(eq(sessions.id, id))
+      .limit(1);
 
     return row;
   }

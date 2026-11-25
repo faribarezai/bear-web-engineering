@@ -100,7 +100,6 @@ export class UnauthorizedError extends ProblemError {
   }
 }
 
-
 export class ForbiddenError extends ProblemError {
   constructor(detail: string) {
     super({
