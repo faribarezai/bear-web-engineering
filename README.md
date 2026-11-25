@@ -445,4 +445,53 @@ Playground 5
 **Theory**: Explain ACID and the lost-update anomaly. What does PostgreSQL's default isolation level (read committed) guarantee, and what not? Compare pessimistic locking, atomic updates and optimistic concurrency with a version column.
 
 
+# Playgroung 6: Authentication & Authorization
+
+
+### Task 1: Users and password storage
+- users table via migration: id, email unique, password_hash, role, created_at
+- POST /api/auth/register: zod validates e-mail format and password length (at least 12, no
+composition rules)
+- Hash with argon2id, store only the hash; a duplicate e-mail yields a 409 Problem
+
+**Done**: registering works from the UI, SELECT password_hash FROM users shows argon2 hashes only,
+duplicate registration yields 409.
+
+**Theory**: Why hash instead of encrypt, what do salt and work factor do, and why is a deliberately slow hash a feature?
+Why does NIST SP 800-63B prefer length over composition rules? What is the trade-off between a clear 409 and user
+enumeration?
+
+
+
+
+### Task 2: Login and session, with a written decision
+- POST /api/auth/login, POST /api/auth/logout, GET /api/auth/me
+- Decide: server-side session (cookie with id, sessions in PostgreSQL) or JWT; write a tenline ADR in the README (context, options, decision, consequences)
+- Cookie flags right: HttpOnly, Secure in production, SameSite=Lax, Path; logout actually
+invalidates the credential
+- React app shows the logged-in user and a logout button
+
+**Done**: /api/auth/me returns the user after login and a 401 Problem after logout or without a cookie; the
+ADR is in the README.
+
+**Theory**: Compare session cookies and JWTs regarding revocation, statelessness, size and storage in the browser.
+What does an XSS attacker get in each case, and how does SameSite relate to CSRF?
+
+
+### Task 3: Authorisation for comments
+- Comments get an author_id; creating requires a login (401 otherwise)
+- Deleting is allowed for the author and for users with the role moderator (403 otherwise);
+seed one moderator
+- Enforce in one place on the server (preHandler or policy function); the UI only hides the
+delete button where the call would fail
+
+**Done**: a curl matrix (anonymous, author, other user, moderator) shows 401, 204, 403 and 204 for
+DELETE; the UI matches.
+
+**Theory**: Authentication versus authorisation, 401 versus 403. Explain RBAC and ownership checks, what an IDOR
+vulnerability is (OWASP A01 Broken Access Control) and why hiding a button in the client is not a security control.
+
+
+
+
 <p>© 2026 Leon Freudenthaler (Hochschule Campus Wien). All rights reversed.</p>

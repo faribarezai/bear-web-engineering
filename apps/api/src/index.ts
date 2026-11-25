@@ -3,11 +3,13 @@ import { db, env, pool } from './db.js';
 import {
   DrizzleBearRepository,
   DrizzleCommentRepository,
+  DrizzleUserRepository,
 } from './repo/drizzle.js';
 
 const app = await buildApp({
   bearRepo: new DrizzleBearRepository(db),
   commentRepo: new DrizzleCommentRepository(db),
+  userRepo: new DrizzleUserRepository(db),
   corsOrigins: env.CORS_ORIGINS,
   checkReady: async () => {
     try {

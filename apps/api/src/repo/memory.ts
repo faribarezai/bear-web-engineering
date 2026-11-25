@@ -1,6 +1,13 @@
 import { randomUUID } from 'node:crypto';
-import type { Bear, Comment, CreateCommentInput } from '../schema.js';
-import type { BearRepository, CommentRepository } from './types.js';
+import type { Bear, Comment, CreateCommentInput, User } from '../schema.js';
+import type {
+  BearRepository,
+  CommentRepository,
+  CreateUserParams,
+  UserRepository,
+  UserRecord,
+} from './types.js';
+import { ConflictError } from '../errors.js';
 
 export class InMemoryBearRepository implements BearRepository {
   private readonly bears = new Map<string, Bear>();
@@ -49,5 +56,45 @@ export class InMemoryCommentRepository implements CommentRepository {
 
   async deleteById(commentId: string): Promise<boolean> {
     return this.comments.delete(commentId);
+  }
+}
+
+export class InMemoryUserRepository implements UserRepository {
+  private readonly users = new Map<string, UserRecord>();
+
+  async findByEmail(email: string): Promise<UserRecord | undefined> {
+    const normalized = email.trim().toLowerCase();
+    for (const user of this.users.values()) {
+      if (user.email === normalized) {
+        return user;
+      }
+    }
+    return undefined;
+  }
+
+  async findById(id: string): Promise<UserRecord | undefined> {
+    return this.users.get(id);
+  }
+
+  async create(params: CreateUserParams): Promise<User> {
+    const normalized = params.email.trim().toLowerCase();
+    const existing = await this.findByEmail(normalized);
+    if (existing !== undefined) {
+      throw new ConflictError(
+        `A user with email '${normalized}' already exists.`
+      );
+    }
+
+    const record: UserRecord = {
+      id: randomUUID(),
+      email: normalized,
+      passwordHash: params.passwordHash,
+      role: params.role ?? 'user',
+      createdAt: new Date().toISOString(),
+    };
+    this.users.set(record.id, record);
+
+    const { passwordHash: _ignored, ...publicUser } = record;
+    return publicUser;
   }
 }

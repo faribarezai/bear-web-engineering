@@ -1,5 +1,29 @@
 import { z } from 'zod';
 
+// UserRoleSchema
+export const UserRoleSchema = z.enum(['user', 'moderator']);
+export type UserRole = z.infer<typeof UserRoleSchema>;
+
+// RegisterUserSchema
+export const RegisterUserSchema = z.object({
+  email: z.email('Invalid email format.').trim().toLowerCase(),
+  password: z
+    .string()
+    .min(12, 'Password must be at least 12 characters long.')
+    .max(128, 'Password must be at most 128 characters long.'),
+});
+
+export type RegisterUserInput = z.infer<typeof RegisterUserSchema>;
+// UserSchema
+export const UserSchema = z.object({
+  id: z.uuid(),
+  email: z.email(),
+  role: UserRoleSchema,
+  createdAt: z.iso.datetime(),
+});
+
+export type User = z.infer<typeof UserSchema>;
+
 export const BearSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),

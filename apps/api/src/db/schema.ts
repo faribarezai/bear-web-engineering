@@ -36,3 +36,14 @@ export const comments = pgTable(
     index('comments_bear_id_created_at_idx').on(table.bearId, table.createdAt),
   ]
 );
+
+// Users-Table
+export const users = pgTable('users', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  email: varchar('email', { length: 255 }).notNull().unique(),
+  passwordHash: text('password_hash').notNull(),
+  role: varchar('role', { length: 32 }).notNull().default('user'),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});

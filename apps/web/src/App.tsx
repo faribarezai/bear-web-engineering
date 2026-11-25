@@ -1,10 +1,11 @@
 import React from 'react';
 import { Routes, Route, useSearchParams, useNavigate } from 'react-router-dom';
-import { Header } from './components/Header.tsx';
-import { Navbar } from './components/Navbar.tsx';
 import { MoreBears } from './components/MoreBears.tsx';
 import { BearDetail } from './components/BearDetail.tsx';
 import { HighlightedText } from './components/HighlightedText.tsx';
+import { RegisterForm } from './components/RegisterForm.tsx';
+import { Header } from './components/Header.tsx';
+import { Navbar } from './components/Navbar.tsx';
 
 export const App: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -118,6 +119,7 @@ export const App: React.FC = () => {
         </Routes>
 
         <div className="secondary">
+          <RegisterForm />
           <h2>Related</h2>
           <ul>
             <li>

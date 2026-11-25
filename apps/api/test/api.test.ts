@@ -4,6 +4,7 @@ import { buildApp } from '../src/app.js';
 import {
     InMemoryBearRepository,
     InMemoryCommentRepository,
+    InMemoryUserRepository,
 } from '../src/repo/memory.js';
 
 function createTestApp() {
@@ -17,10 +18,12 @@ function createTestApp() {
         },
     ]);
     const commentRepo = new InMemoryCommentRepository();
+    const userRepo = new InMemoryUserRepository();
 
     return buildApp({
         bearRepo,
         commentRepo,
+        userRepo,
         checkReady: async () => true,
     });
 }

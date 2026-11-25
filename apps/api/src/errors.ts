@@ -76,3 +76,15 @@ export class ServiceUnavailableError extends ProblemError {
     });
   }
 }
+
+// ConflictError
+export class ConflictError extends ProblemError {
+  constructor(detail: string) {
+    super({
+      status: 409,
+      title: 'Conflict',
+      detail,
+      type: 'https://example.org/problems/conflict',
+    });
+  }
+}

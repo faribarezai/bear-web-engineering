@@ -9,6 +9,7 @@ import Fastify, {
 import cors from '@fastify/cors';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
+import argon2 from 'argon2';
 import {
   hasZodFastifySchemaValidationErrors,
   jsonSchemaTransform,
@@ -29,15 +30,22 @@ import {
   CreateCommentSchema,
   HealthResponseSchema,
   ProblemDetailsSchema,
+  RegisterUserSchema,
+  UserSchema,
 } from './schema.js';
 import {
   BadRequestError,
+  ConflictError,
   NotFoundError,
   ProblemError,
   ServiceUnavailableError,
   type ValidationIssue,
 } from './errors.js';
-import type { BearRepository, CommentRepository } from './repo/types.js';
+import type {
+  BearRepository,
+  CommentRepository,
+  UserRepository,
+} from './repo/types.js';
 
 const pkg = JSON.parse(
   readFileSync(new URL('../package.json', import.meta.url), 'utf-8')
@@ -56,6 +64,7 @@ interface ProblemDetails {
 export interface AppDependencies {
   bearRepo: BearRepository;
   commentRepo: CommentRepository;
+  userRepo: UserRepository;
   checkReady: () => Promise<boolean>;
   corsOrigins?: string;
 }
@@ -64,6 +73,7 @@ declare module 'fastify' {
   interface FastifyInstance {
     bearRepo: BearRepository;
     commentRepo: CommentRepository;
+    userRepo: UserRepository;
   }
 }
 
@@ -97,6 +107,7 @@ export async function buildApp(deps: AppDependencies): Promise<AppInstance> {
   // Repositories als Fastify-Decorators injizieren
   app.decorate('bearRepo', deps.bearRepo);
   app.decorate('commentRepo', deps.commentRepo);
+  app.decorate('userRepo', deps.userRepo);
 
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
@@ -444,6 +455,44 @@ export async function buildApp(deps: AppDependencies): Promise<AppInstance> {
         .code(201)
         .header('Location', `/api/comments/${comment.id}`)
         .send(comment);
+    }
+  );
+
+  app.post(
+    '/auth/register',
+    {
+      schema: {
+        summary: 'Register a new user account',
+        tags: ['Auth'],
+        body: RegisterUserSchema,
+        response: {
+          201: UserSchema,
+          400: ProblemDetailsSchema,
+          409: ProblemDetailsSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const { email, password } = request.body;
+
+      const existing = await app.userRepo.findByEmail(email);
+      if (existing !== undefined) {
+        throw new ConflictError(`A user with email '${email}' already exists.`);
+      }
+
+      const passwordHash = await argon2.hash(password, {
+        type: argon2.argon2id,
+      });
+
+      const user = await app.userRepo.create({
+        email,
+        passwordHash,
+      });
+
+      return await reply
+        .code(201)
+        .header('Location', `/api/users/${user.id}`)
+        .send(user);
     }
   );
 

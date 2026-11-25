@@ -8,6 +8,13 @@
       "when": 1795051730188,
       "tag": "0000_left_typhoid_mary",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795634595823,
+      "tag": "0001_amazing_red_ghost",
+      "breakpoints": true
     }
   ]
 }
