@@ -10,6 +10,7 @@ export interface Bear {
 export interface CommentItem {
   id: string;
   bearId: string;
+  authorId: string | null;
   author: string;
   text: string;
   createdAt: string;

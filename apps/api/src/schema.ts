@@ -69,6 +69,7 @@ export type CreateCommentInput = z.infer<typeof CreateCommentSchema>;
 export const CommentSchema = z.object({
   id: z.uuid(),
   bearId: z.string().min(1),
+  authorId: z.uuid().nullable(),
   author: z.string().min(1),
   text: z.string().min(1),
   createdAt: z.iso.datetime(),

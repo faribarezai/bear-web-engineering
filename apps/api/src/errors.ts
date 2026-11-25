@@ -99,3 +99,15 @@ export class UnauthorizedError extends ProblemError {
     });
   }
 }
+
+
+export class ForbiddenError extends ProblemError {
+  constructor(detail: string) {
+    super({
+      status: 403,
+      title: 'Forbidden',
+      detail,
+      type: 'https://example.org/problems/forbidden',
+    });
+  }
+}

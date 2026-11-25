@@ -60,29 +60,56 @@ export class DrizzleCommentRepository implements CommentRepository {
 
   async findByBearId(bearId: string): Promise<Comment[]> {
     const rows = await this.db
-      .select()
-      .from(comments)
-      .where(eq(comments.bearId, bearId))
-      .orderBy(asc(comments.createdAt));
+        .select()
+        .from(comments)
+        .where(eq(comments.bearId, bearId))
+        .orderBy(asc(comments.createdAt));
 
     return rows.map((row) => ({
       id: row.id,
       bearId: row.bearId,
+      authorId: row.authorId,
       author: row.author,
       text: row.text,
       createdAt: row.createdAt.toISOString(),
     }));
   }
 
-  async create(bearId: string, input: CreateCommentInput): Promise<Comment> {
+  async findById(commentId: string): Promise<Comment | undefined> {
+    const [row] = await this.db
+        .select()
+        .from(comments)
+        .where(eq(comments.id, commentId))
+        .limit(1);
+
+    if (row === undefined) {
+      return undefined;
+    }
+
+    return {
+      id: row.id,
+      bearId: row.bearId,
+      authorId: row.authorId,
+      author: row.author,
+      text: row.text,
+      createdAt: row.createdAt.toISOString(),
+    };
+  }
+
+  async create(
+      bearId: string,
+      input: CreateCommentInput,
+      authorId: string
+  ): Promise<Comment> {
     const [created] = await this.db
-      .insert(comments)
-      .values({
-        bearId,
-        author: input.author,
-        text: input.text,
-      })
-      .returning();
+        .insert(comments)
+        .values({
+          bearId,
+          authorId,
+          author: input.author,
+          text: input.text,
+        })
+        .returning();
 
     if (created === undefined) {
       throw new Error('Failed to insert comment.');
@@ -91,6 +118,7 @@ export class DrizzleCommentRepository implements CommentRepository {
     return {
       id: created.id,
       bearId: created.bearId,
+      authorId: created.authorId,
       author: created.author,
       text: created.text,
       createdAt: created.createdAt.toISOString(),
@@ -99,9 +127,9 @@ export class DrizzleCommentRepository implements CommentRepository {
 
   async deleteById(commentId: string): Promise<boolean> {
     const deleted = await this.db
-      .delete(comments)
-      .where(eq(comments.id, commentId))
-      .returning({ id: comments.id });
+        .delete(comments)
+        .where(eq(comments.id, commentId))
+        .returning({ id: comments.id });
 
     return deleted.length > 0;
   }

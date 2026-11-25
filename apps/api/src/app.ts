@@ -21,6 +21,7 @@ import {
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { z } from 'zod';
+import { assertCanDeleteComment, requireAuth } from './authz.js';
 import {
   BearIdParamsSchema,
   BearSchema,
@@ -204,7 +205,7 @@ export async function buildApp(deps: AppDependencies): Promise<AppInstance> {
   app.setErrorHandler(async (error, request, reply) => {
     const instance = `${request.url}#${request.id}`;
 
-    // 1. Eigene typisierte ProblemErrors (400, 401, 404, 409, 502, 503, 504)
+    // 1. Eigene typisierte ProblemErrors (400, 401, 403, 404, 409, 502, 503, 504)
     if (error instanceof ProblemError) {
       if (error.status >= 500) {
         request.log.error({ err: error }, error.detail);
@@ -460,11 +461,14 @@ export async function buildApp(deps: AppDependencies): Promise<AppInstance> {
           response: {
             201: CommentSchema,
             400: ProblemDetailsSchema,
+            401: ProblemDetailsSchema,
             404: ProblemDetailsSchema,
           },
         },
       },
       async (request, reply) => {
+        const user = requireAuth(request.currentUser);
+
         const parsedBody = CreateCommentSchema.safeParse(request.body);
         if (!parsedBody.success) {
           const issues: ValidationIssue[] = parsedBody.error.issues.map(
@@ -489,7 +493,8 @@ export async function buildApp(deps: AppDependencies): Promise<AppInstance> {
 
         const comment = await app.commentRepo.create(
             request.params.id,
-            parsedBody.data
+            parsedBody.data,
+            user.id
         );
 
         return await reply
@@ -640,21 +645,25 @@ export async function buildApp(deps: AppDependencies): Promise<AppInstance> {
           params: CommentIdParamsSchema,
           response: {
             204: z.null().describe('Comment deleted'),
+            401: ProblemDetailsSchema,
+            403: ProblemDetailsSchema,
             404: ProblemDetailsSchema,
           },
         },
       },
       async (request, reply) => {
-        const deleted = await app.commentRepo.deleteById(
+        const existing = await app.commentRepo.findById(
             request.params.commentId
         );
-
-        if (!deleted) {
+        if (existing === undefined) {
           throw new NotFoundError(
               `Comment with id '${request.params.commentId}' not found.`
           );
         }
 
+        assertCanDeleteComment(request.currentUser, existing);
+
+        await app.commentRepo.deleteById(request.params.commentId);
         return await reply.code(204).send(null);
       }
   );
